@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#050807">
-<title>Site · Projetos — NeuroDynamics</title>
-<link rel="icon" type="image/png" href="favicon.png">
-<link rel="apple-touch-icon" href="favicon.png">
+<title>Site · Projetos | NeuroDynamics</title>
+<link rel="icon" type="image/png" href="assets/favicon-interno.png">
+<link rel="apple-touch-icon" href="assets/favicon-interno.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -118,8 +118,8 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;
   <!-- LOGIN -->
   <div class="login" id="v-login" hidden>
     <h1>Editar o site</h1>
-    <p class="hint">Entre com a sua conta do SOMA. A edição é liberada para os papéis
-      <b>admin</b> e <b>pessoal</b>.</p>
+    <p class="hint">Entre com a sua conta NeuroDynamics, a mesma do SOMA. A edição é
+      liberada para os papéis <b>admin</b> e <b>pessoal</b>.</p>
     <div class="fld"><label>E-mail</label><input id="l-email" type="email" autocomplete="email"></div>
     <div class="fld"><label>Senha</label><input id="l-senha" type="password" autocomplete="current-password"></div>
     <button class="btn solid" style="width:100%;justify-content:center" onclick="entrar()">Entrar</button>
@@ -258,7 +258,7 @@ function desenhaForm(){
     <div class="acts">
       <button class="btn solid" id="btn-salvar" onclick="salvar('${p.id}')">Salvar alterações</button>
       <button class="btn perigo" onclick="excluir('${p.id}')">Excluir</button>
-      <span class="quando"><a href="index.html#/projects" target="_blank" rel="noopener" style="border-bottom:1px solid var(--line2)">ver o site ↗</a></span>
+      <span class="quando"><a href="./#/projects" target="_blank" rel="noopener" style="border-bottom:1px solid var(--line2)">ver o site ↗</a></span>
     </div>`;
 }
 

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="NeuroDynamics is a health-tech research and development initiative born at the School of Engineering of the Federal University of Minas Gerais (UFMG). Software, firmware, embedded systems and AI — in service of human health.">
 <meta name="theme-color" content="#050807">
-<title>NeuroDynamics — Health-Tech R&D</title>
+<title>NeuroDynamics | Health-Tech R&D</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -84,7 +84,7 @@ nav.hd-nav a.on::after{content:'';display:block;height:1.5px;margin:1px 2px 0;ba
   white-space:nowrap;transition:transform .15s, box-shadow .15s}
 .hd-cta:hover{transform:translateY(-1px);box-shadow:0 8px 26px rgba(245,245,247,.15)}
 .hd-burger{width:42px;height:42px;border:1px solid var(--line2);border-radius:11px;
-  display:inline-flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;
+  display:none;align-items:center;justify-content:center;flex-direction:column;gap:5px;
   transition:border-color .15s, background .15s}
 .hd-burger:hover{border-color:var(--dim);background:rgba(255,255,255,.04)}
 .hd-burger i{display:block;width:16px;height:1.5px;background:var(--ink);transition:transform .25s,opacity .25s}
@@ -94,8 +94,9 @@ body.menu-open .hd-burger i:nth-child(2){transform:translateY(-3.25px) rotate(-4
   nav.hd-nav{display:none}
   .hd-in{height:54px}
   .hd-cta{height:40px;padding:0 16px}
-  .hd-burger{width:40px;height:40px}
+  .hd-burger{display:inline-flex;width:40px;height:40px}
 }
+@media (min-width:921px){#menu{display:none}}
 
 /* ============ FULLSCREEN MENU ============ */
 #menu{position:fixed;inset:0;z-index:55;background:rgba(4,7,6,.72);
@@ -365,7 +366,6 @@ footer{border-top:1px solid var(--line);margin-top:clamp(90px,12vh,150px)}
     <nav class="hd-nav" id="nav-inline">
       <a href="#/about" data-r="about">Who we are</a>
       <a href="#/projects" data-r="projects">Projects</a>
-      <a href="#/contact" data-r="contact">Contact</a>
     </nav>
     <div class="hd-right">
       <a class="hd-cta" href="#/contact">Get in Touch</a>
@@ -422,7 +422,7 @@ footer{border-top:1px solid var(--line);margin-top:clamp(90px,12vh,150px)}
     </div>
     <div class="ft-base">
       <span>© <span id="ft-ano">2026</span> NeuroDynamics</span>
-      <span>Belo Horizonte · 19°52′S 43°58′W</span>
+      <span>LABBIO · School of Engineering · UFMG · 19°52′S 43°58′W</span>
     </div>
   </div>
 </footer>
@@ -854,10 +854,10 @@ function copyMail(){
 
 /* ---------------- router ---------------- */
 const PAGES = {
-  home:     { fn:pageHome,     title:'NeuroDynamics — Health-Tech R&D' },
-  about:    { fn:pageAbout,    title:'Who we are — NeuroDynamics' },
-  projects: { fn:pageProjects, title:'Projects — NeuroDynamics' },
-  contact:  { fn:pageContact,  title:'Contact — NeuroDynamics' }
+  home:     { fn:pageHome,     title:'NeuroDynamics | Health-Tech R&D' },
+  about:    { fn:pageAbout,    title:'Who we are | NeuroDynamics' },
+  projects: { fn:pageProjects, title:'Projects | NeuroDynamics' },
+  contact:  { fn:pageContact,  title:'Contact | NeuroDynamics' }
 };
 function route(){
   const h = (location.hash || '#/').replace(/^#\//,'').split('/')[0];
