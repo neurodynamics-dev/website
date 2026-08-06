@@ -31,9 +31,9 @@ fica indisponível.
   e publicação. Os textos vão ao ar em inglês — preencha já em inglês.
   Enquanto `imagem_url` estiver vazia o site mostra o placeholder técnico;
   ao subir as imagens definitivas, basta colar a URL.
-- **Vídeos de imprensa (aba *Who we are*):** bloco `PRESS_VIDEOS` no topo do
-  `<script>` de `index.html`. Ver [Vídeos de imprensa](#vídeos-de-imprensa)
-  abaixo — inclusive onde hospedar os arquivos.
+- **Imprensa (aba *Who we are*):** blocos `PRESS_VIDEOS` (o carrossel) e
+  `PRESS_ARTICLES` (as matérias escritas) no topo do `<script>` de
+  `index.html`. Ver [Imprensa](#imprensa) abaixo.
 - **Parceiros do letreiro:** bloco `PARTNERS` no topo do `<script>` de
   `index.html`. Itens com `img` usam o arquivo (coloque em `assets/`);
   sem `img`, o site desenha uma marca tipográfica monocromática — troque
@@ -45,9 +45,16 @@ fica indisponível.
 - **Textos das páginas:** funções `pageHome/pageAbout/pageProjects/pageContact`
   no `<script>` de `index.html`.
 
-## Vídeos de imprensa
+## Imprensa
 
-A seção **In the press**, na aba *Who we are*, é um carrossel: toca um clipe
+A seção **In the press**, na aba *Who we are*, tem duas partes: o carrossel
+de vídeos (`PRESS_VIDEOS`) e, embaixo dele, as matérias escritas em cartões
+menores (`PRESS_ARTICLES`). Cada lista funciona sozinha — se uma estiver
+vazia, só a outra aparece; vazias as duas, a seção inteira some da página.
+
+### O carrossel
+
+O carrossel toca um clipe
 por vez, começa **mudo** (única forma de autoplay que os navegadores
 permitem), passa sozinho para o próximo quando o vídeo acaba e volta ao
 primeiro no fim da lista. Ele pausa quando sai da tela — para não gastar
@@ -56,9 +63,13 @@ banda de quem não está olhando — e não toca sozinho para quem usa
 som liga o áudio (a partir daí ele continua ligado nos próximos clipes),
 e as setas e a régua de baixo escolhem o clipe na mão.
 
-Tudo sai da lista `PRESS_VIDEOS`, no topo do `<script>` de `index.html`,
-no mesmo lugar de `PARTNERS`. **Enquanto a lista estiver vazia, a seção
-inteira não aparece no site** — nada de "em breve" no ar.
+A lista fica no topo do `<script>` de `index.html`, no mesmo lugar de
+`PARTNERS`, e a ordem dela é a ordem do carrossel.
+
+O `title` é opcional: **sem ele, o veículo vira o rótulo do clipe** e o ano
+fica na linha de baixo — que é como as reportagens de TV estão hoje ("Jornal
+Nacional · 2026"). Quando o clipe é nosso ou tem nome próprio, aí sim vale
+preencher o `title` e deixar o veículo no `outlet`.
 
 ### Hospedagem: YouTube
 
@@ -125,6 +136,21 @@ ffmpeg -i tv-ufmg-2025.mp4 -ss 2 -frames:v 1 tv-ufmg-2025.jpg   # poster
 720p é suficiente para o tamanho em que o vídeo aparece na página, e vale
 cortar a reportagem no trecho que interessa — quem entra na página não vai
 ver oito minutos de telejornal. Isso vale para o YouTube também.
+
+### As matérias escritas
+
+Embaixo do carrossel, sob o rótulo *Also written about*, entram os cartões
+de `PRESS_ARTICLES` — um por matéria publicada em texto:
+
+```js
+{ title:'Tecnologia desenvolvida pela UFMG leva atleta paraplégico…',
+  outlet:'Globo Esporte', date:'2024',
+  href:'https://ge.globo.com/mg/noticia/2024/10/21/…' }
+```
+
+O título vai **na língua em que a matéria foi publicada** — é o título dela,
+não texto nosso; por isso os que estão lá hoje estão em português, no meio
+de uma página em inglês. O cartão inteiro é o link, que abre em outra aba.
 
 ### Direitos
 

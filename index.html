@@ -331,6 +331,14 @@ a.chan:hover .go{color:var(--syn)}
 .vitem.on .no{color:var(--syn)}
 .vitem.on .ttl{color:var(--ink)}
 @media (min-width:861px){.vitem{flex:1 1 0;min-width:0}}
+/* written coverage: smaller cards under the player */
+.pnote{display:flex;align-items:center;gap:16px;margin:38px 0 16px}
+.pnote span{flex-shrink:0;font-family:var(--fm);font-size:10.5px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--dim)}
+.pnote::after{content:'';flex:1;height:1px;background:var(--line)}
+.chan.art{padding:22px 20px}
+.chan.art .lb{color:var(--muted)}
+.chan.art .vl{font-size:15px;font-weight:600;line-height:1.4;word-break:normal;overflow-wrap:anywhere}
 @media (max-width:520px){
   .vinfo{padding:13px 15px}
   .vacts{width:100%;margin-left:0;justify-content:flex-end}
@@ -538,8 +546,8 @@ const PARTNERS = [
 
    Each item is a video on YouTube — ours or the broadcaster's…
 
-     { title:'Reportagem sobre a Calima',    // shown on the site
-       outlet:'TV UFMG', date:'2025',        // both optional
+     { title:'Reportagem sobre a Calima',    // optional: without one,
+       outlet:'TV UFMG', date:'2025',        //   the outlet is the label
        youtube:'dQw4w9WgXcQ',                // id, not the whole URL
        href:'https://ufmg.br/...' }          // optional "source" link
 
@@ -558,8 +566,39 @@ const PARTNERS = [
    section simply does not appear on the page.
    ============================================================ */
 const PRESS_VIDEOS = [
-  // { title:'', outlet:'', date:'', youtube:'', href:'' },
+  { outlet:'Jornal Nacional', date:'2026', youtube:'AdOeBTOeMu0' },
+  { outlet:'CNN',             date:'2022', youtube:'Fi6vx_Yf8EY' },
+  { outlet:'Record',          date:'2025', youtube:'pytrfROeAVU' },
+  { title:'The team film from our FreeWheels years',
+                              date:'2023', youtube:'2UbfRGVx6wM' },
+  { title:'Cybathlon highlights',
+    outlet:'Cybathlon',       date:'2024', youtube:'WbhvEbVW1-I' },
+  { outlet:'Instituto Galo',  date:'2025', youtube:'zgJx7Qlfm7w' }
 ];
+
+/* ============================================================
+   PRESS ARTICLES — the written coverage, shown as small cards
+   under the carousel. Same section, smaller blocks. Headlines
+   stay in the language they were published in.
+
+     { title:'Headline as published', outlet:'Veículo',
+       date:'2024', href:'https://…' }
+
+   Empty list, no cards — the rest of the section carries on.
+   ============================================================ */
+const PRESS_ARTICLES = [
+  { title:'Tecnologia desenvolvida pela UFMG leva atleta paraplégico a competição internacional',
+    outlet:'Globo Esporte', date:'2024',
+    href:'https://ge.globo.com/mg/noticia/2024/10/21/tecnologia-desenvolvida-pela-ufmg-leva-atleta-paraplegico-a-competicao-internacional.ghtml' },
+  { title:'Atleta paraplégico que treina na UFMG vai às Olimpíadas Biônicas na Suíça',
+    outlet:'UFMG', date:'2024',
+    href:'https://www3.ufmg.br/comunicacao/noticias/atleta-paraplegico-que-treina-na-ufmg-vai-as-olimpiadas-bionicas-na-suica' },
+  { title:'Triciclo feito por alunos da UFMG faz jovem tetraplégico pedalar',
+    outlet:'Record', date:'2024',
+    href:'https://noticias.r7.com/minas-gerais/balanco-geral-mg/video/triciclo-feito-por-alunos-da-ufmg-faz-jovem-tetraplegico-pedalar-01112024/' }
+];
+
+const PRESS_ON = PRESS_VIDEOS.length > 0 || PRESS_ARTICLES.length > 0;
 
 /* ============================================================
    FALLBACK PROJECTS — the site reads projects from Supabase
@@ -646,28 +685,21 @@ const statusChip = s => `<span class="st">${esc(s||'In development')}</span>`;
 const press = { i:0, muted:true, auto:true, want:true, vis:false, quiet:0,
                 el:null, vid:null, box:null, yt:null, poll:null, io:null, fails:0 };
 
-const vLabel = v => [v.outlet, v.date].filter(Boolean).join(' · ');
+/* a clip with no title of its own is labelled by who aired it */
+const vTitle = v => v.title || v.outlet || 'Press coverage';
+const vLabel = v => (v.title ? [v.outlet, v.date] : [v.date]).filter(Boolean).join(' · ');
 
 function pressSection(){
-  if (!PRESS_VIDEOS.length) return '';
+  if (!PRESS_ON) return '';
   const many = PRESS_VIDEOS.length > 1;
   const rail = !many ? '' : `<div class="vrail" id="vrail">${PRESS_VIDEOS.map((v,i)=>`
       <button class="vitem${i?'':' on'}" type="button" data-i="${i}">
         <span class="no">${String(i+1).padStart(2,'0')}</span>
-        <span class="ttl">${esc(v.title || 'Untitled')}</span>
+        <span class="ttl">${esc(vTitle(v))}</span>
         <span class="src">${esc(vLabel(v))}</span>
       </button>`).join('')}</div>`;
 
-  return `
-  <section>
-    <div class="sec-head reveal">
-      <span class="eyebrow">03 · In the press</span>
-      <div>
-        <h2>Seen from the outside.</h2>
-        <p class="sub">Television and press coverage of the initiative and the work
-          coming out of the laboratory.</p>
-      </div>
-    </div>
+  const player = !PRESS_VIDEOS.length ? '' : `
     <div class="press reveal" id="press">
       <div class="vstage" id="vstage">
         <video id="vplay" playsinline muted controls preload="metadata"
@@ -691,7 +723,29 @@ function pressSection(){
         </span>
       </div>
       ${rail}
+    </div>`;
+
+  const read = !PRESS_ARTICLES.length ? '' : `
+    <div class="pnote reveal"><span>Also written about</span></div>
+    <div class="chan-grid">${PRESS_ARTICLES.map(a=>`
+      <a class="chan art reveal" href="${esc(a.href)}" target="_blank" rel="noopener">
+        <span class="lb">${esc([a.outlet, a.date].filter(Boolean).join(' · '))}</span>
+        <span class="vl">${esc(a.title)}</span>
+        <span class="go">Read the article ${IC.ne}</span>
+      </a>`).join('')}</div>`;
+
+  return `
+  <section>
+    <div class="sec-head reveal">
+      <span class="eyebrow">03 · In the press</span>
+      <div>
+        <h2>Seen from the outside.</h2>
+        <p class="sub">Television and press coverage of the initiative and the work
+          coming out of the laboratory.</p>
+      </div>
     </div>
+    ${player}
+    ${read}
   </section>`;
 }
 
@@ -886,7 +940,7 @@ function pressPaint(){
   const v = PRESS_VIDEOS[press.i];
   press.el.classList.toggle('gated', !press.auto);
   $('#vno').textContent  = String(press.i+1).padStart(2,'0');
-  $('#vttl').textContent = v.title || '';
+  $('#vttl').textContent = vTitle(v);
   $('#vsrc').textContent = vLabel(v);
   const link = $('#vlink');
   link.hidden = !v.href;
@@ -1094,7 +1148,7 @@ function pageAbout(){
 
   <section>
     <div class="sec-head reveal">
-      <span class="eyebrow">${PRESS_VIDEOS.length ? '04' : '03'} · Intelligence, applied</span>
+      <span class="eyebrow">${PRESS_ON ? '04' : '03'} · Intelligence, applied</span>
       <div><h2>AI, held to a clinical standard.</h2></div>
     </div>
     <div class="quiet reveal">
@@ -1108,7 +1162,7 @@ function pageAbout(){
 
   <section>
     <div class="sec-head reveal">
-      <span class="eyebrow">${PRESS_VIDEOS.length ? '05' : '04'} · Beyond our own projects</span>
+      <span class="eyebrow">${PRESS_ON ? '05' : '04'} · Beyond our own projects</span>
       <div>
         <h2>Occasionally, we build for others.</h2>
         <p class="sub">Most of what we make is ours. Now and then, we take on development
