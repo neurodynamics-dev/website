@@ -212,8 +212,17 @@ section{margin:0 0 clamp(90px,12vh,150px)}
 .pcard .go{margin-top:auto;padding-top:10px;font-family:var(--fm);font-size:11px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--dim);display:inline-flex;align-items:center;gap:8px;transition:color .15s}
 .pcard:hover .go{color:var(--syn)}
-@media (max-width:860px){.pcard,.pcard.w7,.pcard.w5{grid-column:span 12}}
 .pgrid-foot{display:flex;justify-content:flex-end;margin-top:26px}
+.pgrid-foot .m{display:none}
+@media (max-width:860px){
+  .pcard,.pcard.w7,.pcard.w5{grid-column:span 12}
+  /* mobile keeps the section short: first three projects, then the full list */
+  .pgrid .pcard.xtra{display:none}
+  .pgrid-foot{margin-top:20px}
+  .pgrid-foot .btn{width:100%;justify-content:center}
+  .pgrid-foot .m{display:inline}
+  .pgrid-foot .m ~ .d{display:none}
+}
 
 /* ============ IMAGE PLACEHOLDER ============ */
 .ph{position:relative;aspect-ratio:16/9;border:1px solid var(--line);border-radius:14px;overflow:hidden;
@@ -275,6 +284,57 @@ a.chan:hover{border-color:var(--line2);transform:translateY(-3px)}
 .chan .go{margin-top:auto;padding-top:8px;font-family:var(--fm);font-size:11px;letter-spacing:.12em;
   text-transform:uppercase;color:var(--dim)}
 a.chan:hover .go{color:var(--syn)}
+
+/* ============ PRESS VIDEOS (about page carousel) ============ */
+.press{max-width:1000px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);
+  backdrop-filter:blur(6px);overflow:hidden}
+.vstage{position:relative;aspect-ratio:16/9;background:#000}
+.vstage video,.vstage iframe{position:absolute;inset:0;width:100%;height:100%;
+  border:0;display:block;object-fit:contain;background:#000}
+.vstage .vframe{position:absolute;inset:0}
+.vgate{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  background:rgba(4,7,6,.5);backdrop-filter:blur(2px);width:100%;color:var(--ink)}
+.press.gated .vgate{display:flex}
+.vgate i{width:72px;height:72px;border-radius:50%;border:1px solid var(--line2);
+  background:rgba(7,12,10,.62);display:grid;place-items:center;
+  transition:transform .2s,border-color .2s}
+.vgate:hover i{transform:scale(1.06);border-color:var(--syn)}
+.vgate svg{width:22px;height:22px;margin-left:4px}
+.vmsg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:86%;text-align:center;
+  font-family:var(--fm);font-size:12px;letter-spacing:.06em;color:var(--muted)}
+.vbar{height:2px;background:rgba(245,245,247,.07)}
+.vbar i{display:block;height:100%;width:0;background:var(--syn);transition:width .25s linear}
+.vinfo{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;padding:14px 18px}
+.vinfo .no{font-family:var(--fm);font-size:11px;letter-spacing:.12em;color:var(--syn);flex-shrink:0}
+.vinfo .ttl{font-family:var(--fd);font-size:15px;font-weight:600;line-height:1.3}
+.vinfo .src{font-family:var(--fm);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.vacts{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.vbtn{width:36px;height:36px;border:1px solid var(--line2);border-radius:10px;flex-shrink:0;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;color:var(--muted);
+  transition:color .15s,border-color .15s,background .15s}
+.vbtn:hover{color:var(--ink);border-color:var(--dim);background:rgba(255,255,255,.05)}
+.vbtn svg{width:16px;height:16px}
+.vbtn.lnk{width:auto;padding:0 13px;font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.vbtn.lnk svg{width:12px;height:12px}
+.vrail{display:flex;border-top:1px solid var(--line);overflow-x:auto;
+  scroll-snap-type:x mandatory;scrollbar-width:none}
+.vrail::-webkit-scrollbar{display:none}
+.vitem{position:relative;flex:0 0 74%;text-align:left;padding:15px 18px;scroll-snap-align:start;
+  display:flex;flex-direction:column;gap:3px;border-left:1px solid var(--line);transition:background .2s}
+.vitem:first-child{border-left:0}
+.vitem:hover{background:rgba(255,255,255,.04)}
+.vitem .no{font-family:var(--fm);font-size:10.5px;letter-spacing:.14em;color:var(--dim)}
+.vitem .ttl{font-family:var(--fd);font-size:13.5px;font-weight:500;color:var(--muted);line-height:1.35}
+.vitem .src{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.vitem.on{background:rgba(255,255,255,.05)}
+.vitem.on::before{content:'';position:absolute;left:0;top:0;bottom:0;width:1.5px;background:var(--syn)}
+.vitem.on .no{color:var(--syn)}
+.vitem.on .ttl{color:var(--ink)}
+@media (min-width:861px){.vitem{flex:1 1 0;min-width:0}}
+@media (max-width:520px){
+  .vinfo{padding:13px 15px}
+  .vacts{width:100%;margin-left:0;justify-content:flex-end}
+}
 
 /* ============ PROJECTS PAGE ============ */
 .case{display:grid;grid-template-columns:1fr 1.05fr;gap:clamp(24px,4vw,56px);align-items:center;
@@ -473,6 +533,33 @@ const PARTNERS = [
 ];
 
 /* ============================================================
+   PRESS VIDEOS — the carousel on "Who we are". Plays on its
+   own, muted, and moves to the next clip when one ends.
+
+   Each item is either a video file we host ourselves…
+
+     { title:'Reportagem sobre a Calima',        // shown on the site
+       outlet:'TV UFMG', date:'2025',            // both optional
+       src:'https://media.neurodynamics.dev/press/tv-ufmg-2025.mp4',
+       poster:'https://media.neurodynamics.dev/press/tv-ufmg-2025.jpg',
+       href:'https://ufmg.br/...' }              // optional "source" link
+
+   …or a video that already lives on YouTube (ours or the
+   broadcaster's — embedding theirs is the safest route for a
+   TV segment we do not own):
+
+     { title:'…', outlet:'…', date:'2024', youtube:'dQw4w9WgXcQ' }
+
+   The YouTube id is the part after "watch?v=" or "youtu.be/".
+   Mixing both kinds in the same list is fine. While the list is
+   empty the section simply does not appear on the page.
+   Hosting options are compared in the README.
+   ============================================================ */
+const PRESS_VIDEOS = [
+  // { title:'', outlet:'', date:'', src:'', poster:'', href:'' },
+];
+
+/* ============================================================
    FALLBACK PROJECTS — the site reads projects from Supabase
    (soma_v9.sql, edited at ./admin.html). If the database is
    unreachable, this content keeps the site whole. Keep it
@@ -501,12 +588,21 @@ const FALLBACK_PROJECTS = [
     status:'Applied research', tags:['Software','Infrastructure','Interoperability'] }
 ];
 
+/* how many project cards the home page keeps on phones — the rest sit
+   behind the "See all N projects" link (see the .pgrid mobile rules) */
+const HOME_PROJECTS_MOBILE = 3;
+
 /* ---------------- utilities ---------------- */
 const sb = window.supabase ? supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY) : null;
 const $ = s => document.querySelector(s);
 const esc = v => v == null ? '' : String(v).replace(/[&<>"']/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const state = { projects: FALLBACK_PROJECTS, loaded:false };
+
+/* headline copy counts the projects that are actually published */
+const WORDS = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
+const numWord = n => WORDS[n] || String(n);
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
 function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
   $('#toast').appendChild(t); setTimeout(()=>t.remove(), 4200); }
@@ -516,7 +612,12 @@ const SVG = (d, vb='0 0 24 24') =>
 const IC = {
   arrow: SVG('<path d="M4 12h15M13 5.5 19.5 12 13 18.5"/>'),
   ne:    SVG('<path d="M7 17 17 7M9 7h8v8"/>'),
-  copy:  SVG('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 14.5V6a2 2 0 0 1 2-2h8.5"/>')
+  copy:  SVG('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 14.5V6a2 2 0 0 1 2-2h8.5"/>'),
+  play:  SVG('<path d="M7.5 4.8 19 12 7.5 19.2V4.8Z"/>'),
+  prev:  SVG('<path d="M14.5 5.5 8 12l6.5 6.5"/>'),
+  next:  SVG('<path d="M9.5 5.5 16 12l-6.5 6.5"/>'),
+  mute:  SVG('<path d="M4 9.5v5h3.6L12 18.5v-13L7.6 9.5H4Z"/><path d="M16.2 9.8 20.5 14M20.5 9.8 16.2 14"/>'),
+  vol:   SVG('<path d="M4 9.5v5h3.6L12 18.5v-13L7.6 9.5H4Z"/><path d="M15.8 9a4.2 4.2 0 0 1 0 6M18.6 6.4a8 8 0 0 1 0 11.2"/>')
 };
 
 /* placeholder panel for imagery we don't have yet */
@@ -530,6 +631,252 @@ function ph(fig, name, cls=''){
 
 const statusChip = s => `<span class="st">${esc(s||'In development')}</span>`;
 
+/* ============================================================
+   PRESS CAROUSEL — markup + player. One clip is on stage at a
+   time; it starts muted (the only kind of autoplay browsers
+   allow), advances by itself when it ends, and pauses whenever
+   it scrolls out of view so we are not streaming to nobody.
+   Handles both hosted files (<video>) and YouTube (iframe API).
+   ============================================================ */
+/* auto = may start without a click (off under reduced motion, or once a
+   browser refuses autoplay) · want = should be running right now
+   · vis = on screen · quiet = timestamp of a pause we caused ourselves */
+const press = { i:0, muted:true, auto:true, want:true, vis:false, quiet:0,
+                el:null, vid:null, box:null, yt:null, poll:null, io:null, fails:0 };
+
+const vLabel = v => [v.outlet, v.date].filter(Boolean).join(' · ');
+
+function pressSection(){
+  if (!PRESS_VIDEOS.length) return '';
+  const many = PRESS_VIDEOS.length > 1;
+  const rail = !many ? '' : `<div class="vrail" id="vrail">${PRESS_VIDEOS.map((v,i)=>`
+      <button class="vitem${i?'':' on'}" type="button" data-i="${i}">
+        <span class="no">${String(i+1).padStart(2,'0')}</span>
+        <span class="ttl">${esc(v.title || 'Untitled')}</span>
+        <span class="src">${esc(vLabel(v))}</span>
+      </button>`).join('')}</div>`;
+
+  return `
+  <section>
+    <div class="sec-head reveal">
+      <span class="eyebrow">03 · In the press</span>
+      <div>
+        <h2>Seen from the outside.</h2>
+        <p class="sub">Television and press coverage of the initiative and the work
+          coming out of the laboratory.</p>
+      </div>
+    </div>
+    <div class="press reveal" id="press">
+      <div class="vstage" id="vstage">
+        <video id="vplay" playsinline muted controls preload="metadata"
+               aria-label="Press coverage"></video>
+        <div class="vframe" id="vframe" hidden></div>
+        <p class="vmsg" id="vmsg" hidden></p>
+        <button class="vgate" id="vgate" type="button" aria-label="Play">
+          <i>${IC.play}</i>
+        </button>
+      </div>
+      <div class="vbar"><i id="vprog"></i></div>
+      <div class="vinfo">
+        <span class="no" id="vno">01</span>
+        <span class="ttl" id="vttl"></span>
+        <span class="src" id="vsrc"></span>
+        <span class="vacts">
+          <a class="vbtn lnk" id="vlink" target="_blank" rel="noopener" hidden>Source ${IC.ne}</a>
+          <button class="vbtn" id="vsound" type="button" aria-label="Unmute">${IC.mute}</button>
+          ${many ? `<button class="vbtn" id="vprev" type="button" aria-label="Previous video">${IC.prev}</button>
+          <button class="vbtn" id="vnext" type="button" aria-label="Next video">${IC.next}</button>` : ''}
+        </span>
+      </div>
+      ${rail}
+    </div>
+  </section>`;
+}
+
+/* the YouTube iframe API is only fetched if some clip needs it */
+let ytApi = null;
+function ytLoad(){
+  return ytApi || (ytApi = new Promise((ok, fail)=>{
+    if (window.YT?.Player) return ok(window.YT);
+    const before = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = ()=>{ before?.(); ok(window.YT); };
+    const s = document.createElement('script');
+    s.src = 'https://www.youtube.com/iframe_api';
+    s.onerror = fail;
+    document.head.appendChild(s);
+  }));
+}
+function ytDrop(){
+  try{ press.yt?.destroy?.(); }catch(_){}
+  press.yt = null;
+  if (press.box) press.box.innerHTML = '';
+}
+
+function pressInit(){
+  if (!PRESS_VIDEOS.length || !$('#press')) return;
+  const auto = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  Object.assign(press, { i:0, muted:true, vis:false, quiet:0, fails:0, auto, want:auto,
+    el:$('#press'), vid:$('#vplay'), box:$('#vframe') });
+
+  press.vid.addEventListener('ended', ()=>pressGo(press.i+1, false));
+  press.vid.addEventListener('error', pressFail);
+  press.vid.addEventListener('playing', ()=>{ press.fails = 0; });
+  press.vid.addEventListener('play', ()=>{ press.want = true; });
+  /* these read e.target: events can still land after the page is torn down */
+  press.vid.addEventListener('timeupdate', e => pressProg(e.target.currentTime, e.target.duration));
+  /* a pause we did not cause is the visitor's — respect it */
+  press.vid.addEventListener('pause', e => {
+    if (!e.target.ended && Date.now() - press.quiet > 400) press.want = false;
+  });
+
+  $('#vgate').addEventListener('click', ()=>{ press.auto = true; press.want = true; pressPaint(); pressPlay(); });
+  $('#vsound').addEventListener('click', pressSound);
+  $('#vprev')?.addEventListener('click', ()=>pressGo(press.i-1, true));
+  $('#vnext')?.addEventListener('click', ()=>pressGo(press.i+1, true));
+  $('#vrail')?.querySelectorAll('.vitem').forEach(b =>
+    b.addEventListener('click', ()=>pressGo(+b.dataset.i, true)));
+
+  /* nothing streams while the player is off-screen; it picks up on return */
+  press.io = new IntersectionObserver(es=>es.forEach(e=>{
+    press.vis = e.isIntersecting;
+    if (press.vis){ if (press.want) pressPlay(); }
+    else pressPause();
+  }), { threshold:.2 });
+  press.io.observe($('#vstage'));
+
+  pressLoad();
+  pressPaint();
+}
+
+function pressDestroy(){
+  clearInterval(press.poll); press.poll = null;
+  press.io?.disconnect(); press.io = null;
+  ytDrop();
+  if (press.vid){ try{ press.vid.pause(); press.vid.removeAttribute('src'); press.vid.load(); }catch(_){} }
+  press.el = press.vid = press.box = null;
+}
+
+function pressPlay(){
+  if (!press.el) return;
+  if (PRESS_VIDEOS[press.i].youtube){ press.yt?.playVideo?.(); return; }
+  press.vid.play?.().catch(e => {
+    /* only a refusal to autoplay is worth a play button; an AbortError just
+       means our own pause or the next clip's load got there first */
+    if (e?.name === 'NotAllowedError'){ press.auto = press.want = false; pressPaint(); }
+  });
+}
+function pressPause(){
+  press.quiet = Date.now();
+  if (PRESS_VIDEOS[press.i]?.youtube) press.yt?.pauseVideo?.();
+  else press.vid?.pause();
+}
+
+function pressGo(n, byUser){
+  if (!press.el) return;
+  press.i = (n + PRESS_VIDEOS.length) % PRESS_VIDEOS.length;
+  if (byUser) press.auto = press.want = true;
+  else press.want = press.auto;
+  pressLoad();
+  pressPaint();
+}
+
+function pressLoad(){
+  const v = PRESS_VIDEOS[press.i];
+  clearInterval(press.poll); press.poll = null;
+  press.quiet = Date.now();
+  pressProg(0, 0);
+  $('#vmsg').hidden = true;
+
+  if (v.youtube){
+    try{ press.vid.pause(); press.vid.removeAttribute('src'); press.vid.load(); }catch(_){}
+    press.vid.hidden = true;
+    press.box.hidden = false;
+    ytMount(v.youtube);
+  } else {
+    ytDrop();
+    press.box.hidden = true;
+    press.vid.hidden = false;
+    press.vid.muted = press.muted;
+    if (v.poster) press.vid.poster = v.poster; else press.vid.removeAttribute('poster');
+    press.vid.src = v.src || '';
+    press.vid.load();
+    if (press.want && press.vis) pressPlay();
+  }
+}
+
+function ytMount(id){
+  ytDrop();
+  const seat = document.createElement('div');
+  press.box.appendChild(seat);
+  ytLoad().then(YT=>{
+    if (!seat.isConnected) return;               // route changed while loading
+    press.yt = new YT.Player(seat, {
+      videoId: id,
+      host: 'https://www.youtube-nocookie.com',
+      playerVars: { autoplay: press.want ? 1 : 0, mute:1, rel:0, playsinline:1, modestbranding:1,
+        ...(location.protocol.startsWith('http') ? { origin: location.origin } : {}) },
+      events: {
+        onReady: e => {
+          press.muted ? e.target.mute() : e.target.unMute();
+          if (press.want && press.vis) e.target.playVideo();
+          press.poll = setInterval(()=>{
+            if (press.yt?.getDuration) pressProg(press.yt.getCurrentTime(), press.yt.getDuration());
+          }, 250);
+        },
+        onStateChange: e => { if (e.data === 1) press.fails = 0;
+                              if (e.data === 0) pressGo(press.i+1, false); },
+        onError: pressFail
+      }
+    });
+  }).catch(pressFail);
+}
+
+/* a clip that will not load should not stall the carousel */
+function pressFail(){
+  if (!press.el) return;
+  if (++press.fails >= PRESS_VIDEOS.length){
+    const m = $('#vmsg');
+    if (m){ m.textContent = 'This clip could not be loaded.'; m.hidden = false; }
+    return;
+  }
+  pressGo(press.i+1, false);
+}
+
+function pressSound(){
+  press.muted = !press.muted;
+  if (PRESS_VIDEOS[press.i].youtube) press.muted ? press.yt?.mute?.() : press.yt?.unMute?.();
+  else press.vid.muted = press.muted;
+  if (!press.muted){ press.auto = press.want = true; pressPlay(); }
+  pressPaint();
+}
+
+function pressProg(now, total){
+  const bar = $('#vprog');
+  if (bar) bar.style.width = (total > 0 ? Math.min(100, now / total * 100) : 0) + '%';
+}
+
+function pressPaint(){
+  if (!press.el) return;
+  const v = PRESS_VIDEOS[press.i];
+  press.el.classList.toggle('gated', !press.auto);
+  $('#vno').textContent  = String(press.i+1).padStart(2,'0');
+  $('#vttl').textContent = v.title || '';
+  $('#vsrc').textContent = vLabel(v);
+  const link = $('#vlink');
+  link.hidden = !v.href;
+  if (v.href) link.href = v.href;
+  const snd = $('#vsound');
+  snd.innerHTML = press.muted ? IC.mute : IC.vol;
+  snd.setAttribute('aria-label', press.muted ? 'Unmute' : 'Mute');
+  const rail = $('#vrail');
+  rail?.querySelectorAll('.vitem').forEach(b=>{
+    const on = +b.dataset.i === press.i;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-current', on ? 'true' : 'false');
+    if (on) rail.scrollTo({ left: b.offsetLeft, behavior:'smooth' });
+  });
+}
+
 /* ---------------- data ---------------- */
 async function loadProjects(){
   if (state.loaded || !sb) return;
@@ -538,8 +885,9 @@ async function loadProjects(){
     if (!error && Array.isArray(data) && data.length){
       state.projects = data;
       state.loaded = true;
-      // re-render current page with fresh data
-      render(route());
+      // re-render with fresh data, but only where projects are shown
+      const r = route();
+      if (r === 'home' || r === 'projects') render(r);
     }
   }catch(_){ /* fallback content stays */ }
 }
@@ -547,9 +895,10 @@ async function loadProjects(){
 /* ---------------- pages ---------------- */
 function pageHome(){
   const prj = state.projects;
-  const spans = ['w7','w5','w5','w7',''];
+  const spans = ['w7','w5','w5','w7','',''];
+  // beyond the third card, "xtra" hides the card on phones (see .pgrid rules)
   const cards = prj.map((p,i)=>`
-    <a class="pcard ${spans[i]||''} reveal" href="#/projects">
+    <a class="pcard ${spans[i%spans.length]} ${i>=HOME_PROJECTS_MOBILE?'xtra':''} reveal" href="#/projects">
       ${ph(String(i+1).padStart(2,'0'), p.nome)}
       <div class="body">
         <div class="top"><h3>${esc(p.nome)}</h3>${statusChip(p.status)}</div>
@@ -635,14 +984,16 @@ function pageHome(){
     <div class="sec-head reveal">
       <span class="eyebrow">03 · Selected work</span>
       <div>
-        <h2>Five fronts, one direction.</h2>
+        <h2>${cap(numWord(prj.length))} fronts, one direction.</h2>
         <p class="sub">Internal codenames for work that ranges from early research to
           field-ready systems.</p>
       </div>
     </div>
     <div class="pgrid">${cards}</div>
     <div class="pgrid-foot reveal">
-      <a class="btn ghost" href="#/projects">All projects <span class="ar">${IC.arrow}</span></a>
+      <a class="btn ghost" href="#/projects">${
+        prj.length > HOME_PROJECTS_MOBILE ? `<span class="m">See all ${prj.length} projects</span>` : ''
+      }<span class="d">All projects</span> <span class="ar">${IC.arrow}</span></a>
     </div>
   </section>
 
@@ -713,9 +1064,11 @@ function pageAbout(){
     </div>
   </section>
 
+  ${pressSection()}
+
   <section>
     <div class="sec-head reveal">
-      <span class="eyebrow">03 · Intelligence, applied</span>
+      <span class="eyebrow">${PRESS_VIDEOS.length ? '04' : '03'} · Intelligence, applied</span>
       <div><h2>AI, held to a clinical standard.</h2></div>
     </div>
     <div class="quiet reveal">
@@ -729,7 +1082,7 @@ function pageAbout(){
 
   <section>
     <div class="sec-head reveal">
-      <span class="eyebrow">04 · Beyond our own projects</span>
+      <span class="eyebrow">${PRESS_VIDEOS.length ? '05' : '04'} · Beyond our own projects</span>
       <div>
         <h2>Occasionally, we build for others.</h2>
         <p class="sub">Most of what we make is ours. Now and then, we take on development
@@ -786,9 +1139,9 @@ function pageProjects(){
   <div class="pg-head">
     <span class="eyebrow">The portfolio</span>
     <h1>Projects</h1>
-    <p class="lead">Five active fronts, one direction: technology that helps people. The names
-      are internal codenames; the work behind them ranges from early research to systems
-      approaching the field.</p>
+    <p class="lead">${cap(numWord(state.projects.length))} active fronts, one direction: technology
+      that helps people. The names are internal codenames; the work behind them ranges from
+      early research to systems approaching the field.</p>
   </div>
   ${rows}
   <section style="margin-top:clamp(60px,9vh,110px)">
@@ -871,12 +1224,14 @@ function route(){
   return PAGES[h] ? h : 'home';
 }
 function render(r){
+  pressDestroy();                       // the old page's player goes with its markup
   document.title = PAGES[r].title;
   $('#main').innerHTML = PAGES[r].fn();
   document.querySelectorAll('[data-r]').forEach(a =>
     a.classList.toggle('on', a.dataset.r === r));
   closeMenu();
   observe();
+  if (r === 'about') pressInit();
 }
 window.addEventListener('hashchange', ()=>{ render(route()); window.scrollTo({top:0,behavior:'instant'}); });
 
