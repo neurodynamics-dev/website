@@ -536,27 +536,29 @@ const PARTNERS = [
    PRESS VIDEOS — the carousel on "Who we are". Plays on its
    own, muted, and moves to the next clip when one ends.
 
-   Each item is either a video file we host ourselves…
+   Each item is a video on YouTube — ours or the broadcaster's…
 
-     { title:'Reportagem sobre a Calima',        // shown on the site
-       outlet:'TV UFMG', date:'2025',            // both optional
-       src:'https://media.neurodynamics.dev/press/tv-ufmg-2025.mp4',
-       poster:'https://media.neurodynamics.dev/press/tv-ufmg-2025.jpg',
-       href:'https://ufmg.br/...' }              // optional "source" link
+     { title:'Reportagem sobre a Calima',    // shown on the site
+       outlet:'TV UFMG', date:'2025',        // both optional
+       youtube:'dQw4w9WgXcQ',                // id, not the whole URL
+       href:'https://ufmg.br/...' }          // optional "source" link
 
-   …or a video that already lives on YouTube (ours or the
-   broadcaster's — embedding theirs is the safest route for a
-   TV segment we do not own):
+   The id is what comes after "watch?v=" or "youtu.be/" — drop
+   anything from "&" onwards. Unlisted videos embed fine; private
+   ones do not.
 
-     { title:'…', outlet:'…', date:'2024', youtube:'dQw4w9WgXcQ' }
+   …or, for a file we host ourselves (see the README on where):
 
-   The YouTube id is the part after "watch?v=" or "youtu.be/".
-   Mixing both kinds in the same list is fine. While the list is
-   empty the section simply does not appear on the page.
-   Hosting options are compared in the README.
+     { title:'…', outlet:'…', date:'2024',
+       src:'https://media.neurodynamics.dev/press/clip.mp4',
+       poster:'https://…/clip.jpg' }         // poster: hosted files only
+
+   Mixing both kinds in the same list is fine, and the order here
+   is the order of the carousel. While the list is empty the
+   section simply does not appear on the page.
    ============================================================ */
 const PRESS_VIDEOS = [
-  // { title:'', outlet:'', date:'', src:'', poster:'', href:'' },
+  // { title:'', outlet:'', date:'', youtube:'', href:'' },
 ];
 
 /* ============================================================
@@ -711,6 +713,56 @@ function ytDrop(){
   press.yt = null;
   if (press.box) press.box.innerHTML = '';
 }
+/* leaving YouTube for a hosted file: a hidden iframe keeps playing, so say stop */
+function ytStop(){ try{ press.yt?.pauseVideo?.(); }catch(_){} }
+
+/* progress for the YouTube player has to be polled — it has no timeupdate */
+function ytWatch(){
+  clearInterval(press.poll);
+  press.poll = setInterval(()=>{
+    if (press.yt?.getDuration) pressProg(press.yt.getCurrentTime(), press.yt.getDuration());
+  }, 250);
+}
+
+function ytState(e){
+  if (!PRESS_VIDEOS[press.i]?.youtube) return;   // stale event from the hidden player
+  if (e.data === 1){ press.fails = 0; press.want = true; }                  // playing
+  else if (e.data === 2 && Date.now() - press.quiet > 400) press.want = false; // visitor paused
+  else if (e.data === 0) pressGo(press.i+1, false);                         // ended
+}
+
+/* One player for the whole carousel: the first clip builds the iframe, every
+   clip after that is swapped into it — remounting costs a second each time. */
+function ytShow(id){
+  if (press.yt?.loadVideoById){
+    (press.want && press.vis) ? press.yt.loadVideoById(id) : press.yt.cueVideoById(id);
+    press.muted ? press.yt.mute?.() : press.yt.unMute?.();
+    ytWatch();
+    return;
+  }
+  const seat = document.createElement('div');
+  press.box.innerHTML = '';
+  press.box.appendChild(seat);
+  ytLoad().then(YT => {
+    if (!seat.isConnected) return;               // route changed while loading
+    press.yt = new YT.Player(seat, {
+      videoId: id,
+      host: 'https://www.youtube-nocookie.com',
+      /* autoplay stays off: playback is ours to start, once the clip is on screen */
+      playerVars: { autoplay:0, mute:1, rel:0, playsinline:1, modestbranding:1,
+        ...(location.protocol.startsWith('http') ? { origin: location.origin } : {}) },
+      events: {
+        onReady: e => {
+          press.muted ? e.target.mute() : e.target.unMute();
+          if (press.want && press.vis) e.target.playVideo();
+          ytWatch();
+        },
+        onStateChange: ytState,
+        onError: pressFail
+      }
+    });
+  }).catch(pressFail);
+}
 
 function pressInit(){
   if (!PRESS_VIDEOS.length || !$('#press')) return;
@@ -791,9 +843,9 @@ function pressLoad(){
     try{ press.vid.pause(); press.vid.removeAttribute('src'); press.vid.load(); }catch(_){}
     press.vid.hidden = true;
     press.box.hidden = false;
-    ytMount(v.youtube);
+    ytShow(v.youtube);
   } else {
-    ytDrop();
+    ytStop();
     press.box.hidden = true;
     press.vid.hidden = false;
     press.vid.muted = press.muted;
@@ -804,32 +856,6 @@ function pressLoad(){
   }
 }
 
-function ytMount(id){
-  ytDrop();
-  const seat = document.createElement('div');
-  press.box.appendChild(seat);
-  ytLoad().then(YT=>{
-    if (!seat.isConnected) return;               // route changed while loading
-    press.yt = new YT.Player(seat, {
-      videoId: id,
-      host: 'https://www.youtube-nocookie.com',
-      playerVars: { autoplay: press.want ? 1 : 0, mute:1, rel:0, playsinline:1, modestbranding:1,
-        ...(location.protocol.startsWith('http') ? { origin: location.origin } : {}) },
-      events: {
-        onReady: e => {
-          press.muted ? e.target.mute() : e.target.unMute();
-          if (press.want && press.vis) e.target.playVideo();
-          press.poll = setInterval(()=>{
-            if (press.yt?.getDuration) pressProg(press.yt.getCurrentTime(), press.yt.getDuration());
-          }, 250);
-        },
-        onStateChange: e => { if (e.data === 1) press.fails = 0;
-                              if (e.data === 0) pressGo(press.i+1, false); },
-        onError: pressFail
-      }
-    });
-  }).catch(pressFail);
-}
 
 /* a clip that will not load should not stall the carousel */
 function pressFail(){

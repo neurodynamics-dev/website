@@ -60,49 +60,59 @@ Tudo sai da lista `PRESS_VIDEOS`, no topo do `<script>` de `index.html`,
 no mesmo lugar de `PARTNERS`. **Enquanto a lista estiver vazia, a seção
 inteira não aparece no site** — nada de "em breve" no ar.
 
-Cada item é um arquivo que nós mesmos hospedamos…
+### Hospedagem: YouTube
+
+Ficou decidido que os vídeos ficam no **YouTube** — sem custo, sem limite de
+banda, com qualidade adaptativa, e é o caminho que não depende de nós
+mantermos servidor de mídia no ar. Cada item da lista é assim:
 
 ```js
-{ title:'Reportagem sobre a Calima',      // aparece no site
-  outlet:'TV UFMG', date:'2025',          // opcionais
-  src:'https://media.neurodynamics.dev/press/tv-ufmg-2025.mp4',
-  poster:'https://media.neurodynamics.dev/press/tv-ufmg-2025.jpg',
-  href:'https://ufmg.br/...' }            // opcional: vira o botão "Source"
+{ title:'Reportagem sobre a Calima',   // aparece no site
+  outlet:'TV UFMG', date:'2025',       // opcionais
+  youtube:'dQw4w9WgXcQ',               // só o id, não a URL inteira
+  href:'https://ufmg.br/...' }         // opcional: vira o botão "Source"
 ```
 
-…ou um vídeo que já está no YouTube (o id é o que vem depois de `watch?v=`
-ou de `youtu.be/`):
+Para achar o id, abra o vídeo no YouTube e pegue o que vem depois de
+`watch?v=` (ou depois de `youtu.be/`), jogando fora tudo a partir do `&`:
+
+```
+https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=42s   ->  dQw4w9WgXcQ
+https://youtu.be/dQw4w9WgXcQ                        ->  dQw4w9WgXcQ
+```
+
+Ao subir cada vídeo, duas coisas importam:
+
+- **Visibilidade "não listado" funciona** — o vídeo não aparece na busca do
+  YouTube, mas embute normalmente no site. Visibilidade "privado" **não**
+  embute; o player mostra erro e o carrossel pula o clipe.
+- **Deixe a incorporação permitida** (é o padrão). Em *Conteúdo → Editar →
+  Mostrar mais → Licença*, a opção "Permitir incorporação" precisa estar
+  marcada, senão o vídeo só toca dentro do YouTube.
+
+O player usa `youtube-nocookie.com`, carrega a API do YouTube só quando
+existe algum vídeo na lista, monta **um único** player para o carrossel
+inteiro (trocar de clipe não remonta o iframe) e pula sozinho o clipe que
+não carregar. A ordem da lista é a ordem do carrossel.
+
+Se um dia algum vídeo tiver de ser hospedado por nós — corte bruto, algo que
+não pode ir para o YouTube — o mesmo carrossel aceita arquivo direto no
+lugar do `youtube:`, e os dois tipos convivem na mesma lista:
 
 ```js
-{ title:'…', outlet:'…', date:'2024', youtube:'dQw4w9WgXcQ' }
+{ title:'…', outlet:'…', date:'2024',
+  src:'https://media.neurodynamics.dev/press/clip.mp4',
+  poster:'https://media.neurodynamics.dev/press/clip.jpg' }
 ```
 
-Os dois tipos podem conviver na mesma lista. A ordem da lista é a ordem do
-carrossel. Um clipe que não carregar é pulado automaticamente.
-
-### Onde hospedar
-
-O repositório **não** é lugar para os vídeos: incha o histórico do git para
-sempre e o GitHub Pages não serve arquivos em Git LFS (entrega o ponteiro,
-não o vídeo). As opções que fazem sentido:
-
-| Opção | Limite prático | Quando faz sentido |
-|-------|----------------|--------------------|
-| **Cloudflare R2** + domínio próprio (ex.: `media.neurodynamics.dev`) | 10 GB grátis, **egress zero** | Melhor opção para hospedar por conta própria: o DNS já está no Cloudflare, é só criar o bucket, ligar o domínio customizado e subir os arquivos. Não tem conta de banda para tomar susto. |
-| **Supabase Storage**, bucket público | 1 GB de arquivos e 5 GB de tráfego/mês no plano free | O caminho mais rápido — o projeto já existe. Mas um clipe de 30 MB dá ~170 exibições por mês antes de estourar a cota; serve para começar, não para um site que bombou. |
-| **YouTube** (nosso, ou o do próprio veículo) | sem limite, sem custo | Para reportagem de TV que **não é nossa**, é o caminho mais seguro: embute o vídeo que o veículo já publicou. O player do site já entende `youtube:`. Traz a marca e o player do YouTube junto. |
-
-**Recomendação:** vídeo nosso (institucional, bruto, bastidor) no **R2**, com
-`media.neurodynamics.dev` apontando para o bucket; reportagem de TV que já
-está no ar no canal do veículo, **embutida do YouTube** pelo campo
-`youtube:`. Se quiser ver a seção no ar hoje mesmo sem montar nada, o
-Supabase Storage resolve — e a migração depois é só trocar as URLs em
-`PRESS_VIDEOS`.
-
-### Preparando os arquivos
-
-MP4 com H.264 + AAC toca em qualquer navegador. O `+faststart` é o que
-deixa o vídeo começar antes de baixar inteiro — sem ele o autoplay demora:
+Nesse caso o arquivo **não** vai neste repositório (incha o histórico do git
+para sempre, e o GitHub Pages não serve Git LFS — entrega o ponteiro, não o
+vídeo). As opções são **Cloudflare R2** com domínio próprio, tipo
+`media.neurodynamics.dev` — 10 GB grátis, egress zero, e o DNS já está no
+Cloudflare — ou o **Supabase Storage** em bucket público, mais rápido de
+montar porque o projeto já existe, mas com 1 GB de arquivos e 5 GB de
+tráfego por mês no plano free. Prepare o MP4 com H.264 + AAC e
+`+faststart`, que é o que deixa o vídeo começar antes de baixar inteiro:
 
 ```sh
 ffmpeg -i original.mov -vf "scale='min(1280,iw)':-2" \
@@ -112,16 +122,17 @@ ffmpeg -i original.mov -vf "scale='min(1280,iw)':-2" \
 ffmpeg -i tv-ufmg-2025.mp4 -ss 2 -frames:v 1 tv-ufmg-2025.jpg   # poster
 ```
 
-720p é suficiente para o tamanho em que o vídeo aparece na página. Vale
-manter cada clipe abaixo de ~30 MB e cortar a reportagem no trecho que
-interessa — quem entra na página não vai ver oito minutos de telejornal.
+720p é suficiente para o tamanho em que o vídeo aparece na página, e vale
+cortar a reportagem no trecho que interessa — quem entra na página não vai
+ver oito minutos de telejornal. Isso vale para o YouTube também.
 
 ### Direitos
 
-Uma reportagem é obra do veículo que a produziu. Republicar o arquivo em
-servidor nosso é o caminho que pede autorização; embutir o vídeo que o
-próprio veículo publicou (campo `youtube:`, com o `href:` apontando para a
-matéria) é o que não pede.
+Uma reportagem é obra do veículo que a produziu. Se o próprio veículo já
+publicou a matéria no canal dele, o caminho limpo é apontar o `youtube:`
+para **esse** vídeo, com o `href:` levando à matéria — assim ninguém
+republica nada. Subir a reportagem em canal nosso é republicação, e essa
+pede autorização do veículo.
 
 ## Como publicar
 
