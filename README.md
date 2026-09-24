@@ -64,9 +64,10 @@ Sem escolha prévia, o site segue o idioma do navegador e cai no inglês.
   vazio em português ou francês cai no texto em inglês.
   Enquanto `imagem_url` estiver vazia o site mostra o placeholder técnico;
   ao subir as imagens definitivas, basta colar a URL.
-- **Imprensa (aba *Who we are*):** blocos `PRESS_VIDEOS` (o carrossel) e
-  `PRESS_ARTICLES` (as matérias escritas) no topo do `<script>` de
-  `index.html`. Ver [Imprensa](#imprensa) abaixo.
+- **Imprensa (aba *Who we are*):** no portal do membro, em **Studio ›
+  Configurações › Imprensa do site** (`membro.neurodynamics.dev/#/studio/config/imprensa`).
+  O site lê a lista do banco na hora; os blocos `PRESS_VIDEOS` e
+  `PRESS_ARTICLES` do `index.html` são só a reserva. Ver [Imprensa](#imprensa).
 - **Parceiros do letreiro:** bloco `PARTNERS` no topo do `<script>` de
   `index.html`. Itens com `img` usam o arquivo (coloque em `assets/`);
   sem `img`, o site desenha uma marca tipográfica monocromática — troque
@@ -83,6 +84,24 @@ A seção **In the press**, na aba *Who we are*, tem duas partes: o carrossel
 de vídeos (`PRESS_VIDEOS`) e, embaixo dele, as matérias escritas em cartões
 menores (`PRESS_ARTICLES`). Cada lista funciona sozinha — se uma estiver
 vazia, só a outra aparece; vazias as duas, a seção inteira some da página.
+
+### Onde se edita: no portal, não aqui
+
+Desde a migração **23.0** (`membro/db/v23_studio.sql`), a lista que vale mora
+no banco, na tabela `site_imprensa`, e é editada no portal do membro, em
+**Studio › Configurações › Imprensa do site**: acrescentar um vídeo é colar o
+link do YouTube (o portal tira o id), pôr o veículo e o ano; a ordem de lá é a
+ordem do carrossel; o olho tira do site sem apagar. Editam a gestão do Studio
+(admin e o grupo aprovador) e, como no painel do site, `admin` e `pessoal`.
+
+O site lê a lista por `site_imprensa_publico()`, com a chave anon, depois de
+desenhar a página. Se o banco não responder (ou a 23.0 ainda não tiver sido
+aplicada), ficam os blocos `PRESS_VIDEOS` e `PRESS_ARTICLES` do `index.html` —
+que agora são só a **reserva**. A página *A NeuroDynamics* do site do processo
+seletivo lê a mesma lista: acabou o "ao acrescentar um, atualize os dois".
+
+O que está abaixo continua valendo para os campos — a diferença é onde se
+preenche.
 
 ### O carrossel
 
