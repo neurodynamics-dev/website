@@ -593,8 +593,13 @@ const PARTNERS = [
    Mixing both kinds in the same list is fine, and the order here
    is the order of the carousel. While the list is empty the
    section simply does not appear on the page.
+
+   Since migration 23.0 the list that counts is the one in the
+   database, edited in the member portal (Studio › Configurações ›
+   Imprensa) and read here through site_imprensa_publico(). These
+   two lists are the fallback, for when the database is out.
    ============================================================ */
-const PRESS_VIDEOS = [
+let PRESS_VIDEOS = [
   { outlet:'Jornal Nacional', date:'2026', youtube:'AdOeBTOeMu0' },
   { outlet:'CNN',             date:'2022', youtube:'Fi6vx_Yf8EY' },
   { outlet:'Record',          date:'2025', youtube:'pytrfROeAVU' },
@@ -615,7 +620,7 @@ const PRESS_VIDEOS = [
 
    Empty list, no cards — the rest of the section carries on.
    ============================================================ */
-const PRESS_ARTICLES = [
+let PRESS_ARTICLES = [
   { title:'Tecnologia desenvolvida pela UFMG leva atleta paraplégico a competição internacional',
     outlet:'Globo Esporte', date:'2024',
     href:'https://ge.globo.com/mg/noticia/2024/10/21/tecnologia-desenvolvida-pela-ufmg-leva-atleta-paraplegico-a-competicao-internacional.ghtml' },
@@ -627,7 +632,7 @@ const PRESS_ARTICLES = [
     href:'https://noticias.r7.com/minas-gerais/balanco-geral-mg/video/triciclo-feito-por-alunos-da-ufmg-faz-jovem-tetraplegico-pedalar-01112024/' }
 ];
 
-const PRESS_ON = PRESS_VIDEOS.length > 0 || PRESS_ARTICLES.length > 0;
+let PRESS_ON = PRESS_VIDEOS.length > 0 || PRESS_ARTICLES.length > 0;
 
 /* ============================================================
    TEXTS — every language of the site in one place. To change a
@@ -1378,6 +1383,28 @@ async function loadProjects(){
   }catch(_){ /* fallback content stays */ }
 }
 
+/* The press lists live in the database (see PRESS_VIDEOS). The page
+   only re-renders when they differ from what is already on screen, so
+   a visitor who is already watching the fallback list is not reset. */
+async function loadPress(){
+  if (!sb) return;
+  try{
+    const { data, error } = await sb.rpc('site_imprensa_publico');
+    if (error || !Array.isArray(data?.videos)) return;
+    const videos = data.videos.filter(v => v.youtube || v.arquivo).map(v => ({
+      title: v.titulo || '', outlet: v.veiculo || '', date: v.ano || '',
+      ...(v.youtube ? { youtube: v.youtube } : { src: v.arquivo, poster: v.capa || '' }),
+      ...(v.url ? { href: v.url } : {}) }));
+    const articles = (data.materias || []).map(m => ({ title: m.titulo, outlet: m.veiculo || '', date: m.ano || '', href: m.url }));
+    const key = (vs, as) => JSON.stringify([vs.map(v => [v.title || '', v.outlet || '', v.date || '', v.youtube || v.src || '', v.href || '']),
+                                            as.map(a => [a.title, a.outlet || '', a.date || '', a.href])]);
+    const same = key(videos, articles) === key(PRESS_VIDEOS, PRESS_ARTICLES);
+    PRESS_VIDEOS = videos; PRESS_ARTICLES = articles;
+    PRESS_ON = videos.length > 0 || articles.length > 0;
+    if (!same && route() === 'about') render('about');
+  }catch(_){ /* fallback content stays */ }
+}
+
 /* ---------------- pages ---------------- */
 function pageHome(){
   const t = T().home, prj = state.projects;
@@ -1745,6 +1772,7 @@ $('#menu-mail').href = `mailto:${CONTACT_EMAIL}`; $('#menu-mail').textContent = 
 paintChrome();
 render(route());
 loadProjects();
+loadPress();
 </script>
 </body>
 </html>
