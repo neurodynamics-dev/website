@@ -10,17 +10,13 @@
 <link rel="apple-touch-icon" href="favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ds/tokens.css">
+<link rel="stylesheet" href="ds/casca.css">
 <style>
 :root{
-  --bg:#050807; --panel:#0B1210; --ink:#F5F5F7; --muted:#9AA5A1; --dim:#616C68;
-  --line:rgba(245,245,247,.08); --line2:rgba(245,245,247,.16);
-  --deep:#00352F; --green:#00594F; --green2:#0B7D6E; --teal:#2DD4BF; --syn:#CEDC00;
-  --card:rgba(255,255,255,.03); --glass:rgba(7,12,10,.62);
-  --r:18px; --max:1240px;
-  --fd:'Archivo',-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
-  --fm:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
-  --f:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,Helvetica,sans-serif;
+  /* papéis, tipo e forma vêm de ds/tokens.css; aqui só o que é do site */
+  --green:#00594F; --green2:#0B7D6E; --teal:#2DD4BF;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -61,80 +57,10 @@ img{max-width:100%}
 }
 
 /* ============ FLOATING HEADER ============ */
-#hd{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:60;
-  width:min(var(--max),calc(100vw - 28px));
-  border:1px solid var(--line);border-radius:16px;
-  background:var(--glass);backdrop-filter:blur(18px) saturate(1.5);
-  -webkit-backdrop-filter:blur(18px) saturate(1.5);
-  transition:border-color .3s, box-shadow .3s, background .3s}
-#hd.rolou{border-color:var(--line2);box-shadow:0 18px 50px rgba(0,0,0,.45);background:rgba(7,12,10,.8)}
-.hd-in{display:flex;align-items:center;gap:20px;padding:0 8px 0 20px;height:58px}
-.hd-logo{display:flex;align-items:center;flex-shrink:0;margin-right:auto}
-.hd-logo img{height:19px;width:auto;display:block;filter:brightness(0) invert(1)}
-.logotype{font-family:var(--fd);font-weight:700;font-size:17.5px;letter-spacing:-.02em;color:var(--ink);white-space:nowrap}
-nav.hd-nav{display:flex;gap:2px}
-nav.hd-nav a{font-family:var(--fd);font-size:13px;font-weight:500;color:var(--muted);
-  padding:8px 14px;border-radius:10px;transition:color .15s,background .15s;white-space:nowrap}
-nav.hd-nav a:hover{color:var(--ink);background:rgba(255,255,255,.05)}
-nav.hd-nav a.on{color:var(--ink)}
-nav.hd-nav a.on::after{content:'';display:block;height:1.5px;margin:1px 2px 0;background:var(--syn)}
-.hd-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.hd-cta{display:inline-flex;align-items:center;height:42px;padding:0 20px;border-radius:11px;
-  background:var(--ink);color:#0A0F0E;font-family:var(--fd);font-weight:600;font-size:13.5px;
-  white-space:nowrap;transition:transform .15s, box-shadow .15s}
-.hd-cta:hover{transform:translateY(-1px);box-shadow:0 8px 26px rgba(245,245,247,.15)}
-.hd-burger{width:42px;height:42px;border:1px solid var(--line2);border-radius:11px;
-  display:none;align-items:center;justify-content:center;flex-direction:column;gap:5px;
-  transition:border-color .15s, background .15s}
-.hd-burger:hover{border-color:var(--dim);background:rgba(255,255,255,.04)}
-.hd-burger i{display:block;width:16px;height:1.5px;background:var(--ink);transition:transform .25s,opacity .25s}
-body.menu-open .hd-burger i:nth-child(1){transform:translateY(3.25px) rotate(45deg)}
-body.menu-open .hd-burger i:nth-child(2){transform:translateY(-3.25px) rotate(-45deg)}
 /* language selector */
-.lang{display:flex;align-items:center;height:42px;padding:3px;gap:1px;
-  border:1px solid var(--line2);border-radius:11px;background:rgba(255,255,255,.03)}
-.lang button{font-family:var(--fm);font-size:11px;letter-spacing:.06em;color:var(--dim);
-  height:100%;padding:0 9px;border-radius:8px;transition:color .15s,background .15s}
-.lang button:hover{color:var(--muted)}
-.lang button.on{color:var(--ink);background:rgba(255,255,255,.09)}
-@media (max-width:920px){
-  nav.hd-nav{display:none}
-  .hd-in{height:54px;gap:12px}
-  .hd-cta{height:40px;padding:0 16px}
-  .hd-burger{display:inline-flex;width:40px;height:40px}
-  .lang{height:40px}
-}
-@media (max-width:560px){
-  .hd-cta{display:none}
-  .hd-in{padding-left:16px}
-  .lang button{padding:0 8px}
-}
-@media (min-width:921px){#menu{display:none}}
 
 /* ============ FULLSCREEN MENU ============ */
-#menu{position:fixed;inset:0;z-index:55;background:rgba(4,7,6,.72);
-  backdrop-filter:blur(26px) saturate(1.4);-webkit-backdrop-filter:blur(26px) saturate(1.4);
-  opacity:0;pointer-events:none;transition:opacity .3s ease}
-body.menu-open #menu{opacity:1;pointer-events:auto}
-.menu-in{max-width:var(--max);margin:0 auto;padding:130px 26px 40px;height:100%;
-  display:flex;flex-direction:column}
-.menu-links{display:flex;flex-direction:column}
-.menu-links a{display:flex;align-items:baseline;gap:22px;padding:16px 4px;
-  border-top:1px solid var(--line);font-family:var(--fd);font-weight:600;
-  font-size:clamp(30px,5.5vw,54px);letter-spacing:-.02em;color:var(--muted);
-  transform:translateY(18px);opacity:0;transition:color .2s}
-.menu-links a:last-child{border-bottom:1px solid var(--line)}
-body.menu-open .menu-links a{animation:mrise .55s cubic-bezier(.22,1,.36,1) forwards}
-body.menu-open .menu-links a:nth-child(2){animation-delay:.06s}
-body.menu-open .menu-links a:nth-child(3){animation-delay:.12s}
-body.menu-open .menu-links a:nth-child(4){animation-delay:.18s}
 @keyframes mrise{to{transform:none;opacity:1}}
-.menu-links a:hover,.menu-links a.on{color:var(--ink)}
-.menu-links a .idx{font-family:var(--fm);font-size:12px;font-weight:400;color:var(--dim);letter-spacing:.1em}
-.menu-links a:hover .idx{color:var(--syn)}
-.menu-foot{margin-top:auto;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
-  font-family:var(--fm);font-size:11.5px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase}
-.menu-foot a:hover{color:var(--ink)}
 
 /* ============ LAYOUT PRIMITIVES ============ */
 main{max-width:var(--max);margin:0 auto;padding:0 26px}
@@ -426,21 +352,6 @@ a.chan:hover .go{color:var(--syn)}
 .band .btn.solid{background:var(--ink)}
 
 /* ============ FOOTER ============ */
-footer{border-top:1px solid var(--line);margin-top:clamp(90px,12vh,150px)}
-.ft-in{max-width:var(--max);margin:0 auto;padding:56px 26px 30px}
-.ft-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:34px;padding-bottom:44px}
-@media (max-width:820px){.ft-grid{grid-template-columns:1fr}}
-.ft-grid img{height:19px;filter:brightness(0) invert(.92);margin-bottom:16px}
-.ft-grid .logotype{display:block;margin-bottom:16px}
-.ft-grid .desc{font-size:13px;color:var(--muted);max-width:340px;line-height:1.7}
-.ft-grid h4{font-family:var(--fm);font-size:10.5px;font-weight:500;letter-spacing:.2em;
-  text-transform:uppercase;color:var(--dim);margin-bottom:16px}
-.ft-grid ul{list-style:none;display:flex;flex-direction:column;gap:10px}
-.ft-grid ul a{font-size:13.5px;color:var(--muted);transition:color .15s}
-.ft-grid ul a:hover{color:var(--ink)}
-.ft-base{border-top:1px solid var(--line);padding-top:24px;display:flex;justify-content:space-between;
-  gap:12px;flex-wrap:wrap;font-family:var(--fm);font-size:11px;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--dim)}
 
 /* ============ MISC ============ */
 .go svg{width:12px;height:12px}
@@ -456,76 +367,15 @@ footer{border-top:1px solid var(--line);margin-top:clamp(90px,12vh,150px)}
 
 <div id="bg"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 
-<header id="hd">
-  <div class="hd-in">
-    <a class="hd-logo" href="#/" aria-label="NeuroDynamics">
-      <img id="logo-hd" src="" alt="NeuroDynamics">
-    </a>
-    <nav class="hd-nav" id="nav-inline">
-      <a href="#/about" data-r="about" data-k="about"></a>
-      <a href="#/projects" data-r="projects" data-k="projects"></a>
-    </nav>
-    <div class="hd-right">
-      <div class="lang" id="lang" role="group" aria-label="Language"></div>
-      <a class="hd-cta" id="hd-cta" href="#/contact"></a>
-      <button class="hd-burger" id="burger" aria-label="Menu" aria-expanded="false">
-        <i></i><i></i>
-      </button>
-    </div>
-  </div>
-</header>
-
-<div id="menu" aria-hidden="true">
-  <div class="menu-in">
-    <nav class="menu-links" id="nav-menu">
-      <a href="#/" data-r="home" data-k="home"><span class="idx">01</span><span class="lb"></span></a>
-      <a href="#/about" data-r="about" data-k="about"><span class="idx">02</span><span class="lb"></span></a>
-      <a href="#/projects" data-r="projects" data-k="projects"><span class="idx">03</span><span class="lb"></span></a>
-      <a href="#/contact" data-r="contact" data-k="contact"><span class="idx">04</span><span class="lb"></span></a>
-    </nav>
-    <div class="menu-foot">
-      <span id="menu-place"></span>
-      <a id="menu-mail" href="#"></a>
-      <span id="menu-city"></span>
-    </div>
-  </div>
-</div>
+<div id="nd-cab"></div>
 
 <main id="main"></main>
 
-<footer>
-  <div class="ft-in">
-    <div class="ft-grid">
-      <div>
-        <img id="logo-ft" src="" alt="NeuroDynamics">
-        <p class="desc" id="ft-desc"></p>
-      </div>
-      <div>
-        <h4 id="ft-h-nav"></h4>
-        <ul>
-          <li><a href="#/" data-k="home"></a></li>
-          <li><a href="#/about" data-k="about"></a></li>
-          <li><a href="#/projects" data-k="projects"></a></li>
-          <li><a href="#/contact" data-k="contact"></a></li>
-        </ul>
-      </div>
-      <div>
-        <h4 id="ft-h-reach"></h4>
-        <ul>
-          <li><a id="ft-mail" href="#"></a></li>
-          <li><a id="ft-join" href="https://selecao.neurodynamics.dev" target="_blank" rel="noopener"></a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="ft-base">
-      <span id="ft-rights"></span>
-      <span>LABBIO · School of Engineering · UFMG · 19°52′S 43°58′W</span>
-    </div>
-  </div>
-</footer>
+<div id="nd-rod"></div>
 
 <div id="toast"></div>
 
+<script src="ds/casca.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 /* ============================================================
@@ -535,7 +385,6 @@ const CONFIG = {
   SUPABASE_URL: 'https://rxzmkyjttzzpwtodqkve.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_MJFR-aaQqTS1BthxYJG2kg_5XGhs9wg'
 };
-const LOGO_URL = 'https://raw.githubusercontent.com/matheusmarcondes1/nro/refs/heads/main/imagotipo%20preto.png';
 const CONTACT_EMAIL = 'hello@neurodynamics.dev';
 
 /* ============================================================
@@ -1702,7 +1551,8 @@ function render(r){
   $('#main').innerHTML = PAGES[r]();
   document.querySelectorAll('[data-r]').forEach(a =>
     a.classList.toggle('on', a.dataset.r === r));
-  closeMenu();
+  NDCasca.marcar(r);
+  NDCasca.menu(false);
   observe();
   if (r === 'about') pressInit();
 }
@@ -1711,23 +1561,15 @@ window.addEventListener('hashchange', ()=>{ render(route()); window.scrollTo({to
 /* ---------------- language ---------------- */
 /* labels that live outside <main> and the selector itself */
 function paintChrome(){
-  const t = T();
-  document.querySelectorAll('#nav-inline [data-k]').forEach(a => a.textContent = t.nav[a.dataset.k]);
-  document.querySelectorAll('#nav-menu [data-k]').forEach(a => a.querySelector('.lb').textContent = t.nav[a.dataset.k]);
-  document.querySelectorAll('.ft-grid [data-k]').forEach(a => a.textContent = t.nav[a.dataset.k]);
-  $('#hd-cta').textContent = t.cta;
-  $('#menu-place').textContent = t.menu.place;
-  $('#menu-city').textContent = t.menu.city;
-  $('#ft-desc').textContent = t.ft.desc;
-  $('#ft-h-nav').textContent = t.ft.nav;
-  $('#ft-h-reach').textContent = t.ft.reach;
-  $('#ft-join').textContent = t.ft.join;
-  $('#ft-rights').textContent = t.ft.rights.replace('{y}', new Date().getFullYear());
-  $('#lang').innerHTML = LANGS.map(l =>
-    `<button data-l="${l}" class="${l===state.lang?'on':''}" aria-pressed="${l===state.lang}"
-      lang="${L[l].htmlLang}">${L[l].label}</button>`).join('');
-  $('#lang').querySelectorAll('button').forEach(b =>
-    b.addEventListener('click', () => setLang(b.dataset.l)));
+  const t = T(), r = route();
+  NDCasca.montar({
+    site:'site', lang:state.lang, idiomas:LANGS, inicio:'#/', email:CONTACT_EMAIL,
+    links:['home','about','projects','contact'].map(k =>
+      ({ href: k === 'home' ? '#/' : '#/' + k, rotulo:t.nav[k], chave:k, atual:k === r })),
+    cta:{ href:'#/contact', rotulo:t.cta },
+    desc:t.ft.desc,
+    aoIdioma:setLang
+  });
 }
 
 function setLang(l){
@@ -1738,16 +1580,6 @@ function setLang(l){
   render(route());
 }
 
-/* ---------------- menu ---------------- */
-function closeMenu(){ document.body.classList.remove('menu-open');
-  $('#burger').setAttribute('aria-expanded','false'); $('#menu').setAttribute('aria-hidden','true'); }
-$('#burger').addEventListener('click', ()=>{
-  const open = document.body.classList.toggle('menu-open');
-  $('#burger').setAttribute('aria-expanded', open);
-  $('#menu').setAttribute('aria-hidden', !open);
-});
-document.addEventListener('keydown', e=>{ if (e.key === 'Escape') closeMenu(); });
-
 /* ---------------- scroll effects ---------------- */
 let obs;
 function observe(){
@@ -1757,18 +1589,8 @@ function observe(){
   }), { threshold:.12 });
   document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
 }
-window.addEventListener('scroll', ()=>{
-  $('#hd').classList.toggle('rolou', window.scrollY > 8);
-}, { passive:true });
 
 /* ---------------- boot ---------------- */
-[['#logo-hd'],['#logo-ft']].forEach(([sel])=>{
-  const img = $(sel);
-  img.onerror = () => { const s=document.createElement('span'); s.className='logotype'; s.textContent='NeuroDynamics'; img.replaceWith(s); };
-  img.src = LOGO_URL;
-});
-$('#ft-mail').href = `mailto:${CONTACT_EMAIL}`; $('#ft-mail').textContent = CONTACT_EMAIL;
-$('#menu-mail').href = `mailto:${CONTACT_EMAIL}`; $('#menu-mail').textContent = CONTACT_EMAIL;
 paintChrome();
 render(route());
 loadProjects();
