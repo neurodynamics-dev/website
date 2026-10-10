@@ -72,13 +72,13 @@ textarea{resize:vertical;line-height:1.6;width:100%}
 /* Só em superfícies do conjunto primário. Brilho, blur e gradiente
    são exclusivos do Cortex. */
 .nd-bg{position:fixed;inset:0;z-index:-2;overflow:hidden;
-  background:radial-gradient(120% 90% at 72% -12%, #081511 0%, var(--bg) 58%)}
+  background:radial-gradient(120% 90% at 72% -12%, color-mix(in srgb,var(--axon) 14%,var(--bg)) 0%, var(--bg) 58%)}
 .nd-bg::after{content:'';position:absolute;inset:0;
   background-image:linear-gradient(rgba(var(--ink-rgb),.028) 1px,transparent 1px),
                    linear-gradient(90deg,rgba(var(--ink-rgb),.028) 1px,transparent 1px);
   background-size:130px 130px;
-  -webkit-mask-image:radial-gradient(85% 62% at 50% 26%, #000 0%, transparent 100%);
-          mask-image:radial-gradient(85% 62% at 50% 26%, #000 0%, transparent 100%)}
+  -webkit-mask-image:radial-gradient(85% 62% at 50% 26%, black 0%, transparent 100%);
+          mask-image:radial-gradient(85% 62% at 50% 26%, black 0%, transparent 100%)}
 
 /* ---------- tipografia ------------------------------------ */
 /* Rótulo: Archivo 600 caixa alta, nunca mono. Secundário: mesmo
@@ -103,11 +103,11 @@ h1.title{font-size:var(--fs-h1);font-weight:600;line-height:var(--lh-display);le
 /* .solid é o CTA único da tela. .fam pinta o botão com a família
    da banda: defina --fam-light, --fam-medium e --fam-dark (ou use
    as classes .f-ion, .f-retina...). */
-.btn.danger{background:var(--fn-critical-primary);color:#FFFFFF}
-.btn.danger:hover{background:#E0261A}
+.btn.danger{background:var(--fn-critical-primary);color:var(--paper)}
+.btn.danger:hover{background:color-mix(in srgb,var(--fn-critical-primary) 88%,black)}
 .btn.fam{background:var(--fam-medium);color:var(--fam-dark)}
 .btn.fam:hover{background:var(--fam-light);transform:translateY(-1px)}
-.btn.formal{background:var(--cortex);color:#fff;border-radius:var(--r-formal)}
+.btn.formal{background:var(--cortex);color:var(--paper);border-radius:var(--r-formal)}
 .btn.formal:hover{background:var(--axon)}
 .btn.formal-outline{background:transparent;border:1px solid var(--formal-rule-strong);
   color:var(--formal-ink);border-radius:var(--r-formal)}
@@ -324,7 +324,7 @@ h1.title{font-size:var(--fs-h1);font-weight:600;line-height:var(--lh-display);le
    rótulo da família, botão na mesma família (.btn.fam) e ícone
    grande e apagado (.band-ic) à direita, atrás do texto. Nunca ao
    lado de Synapse ou de um CTA Cortex. */
-.band{background:linear-gradient(118deg,var(--cortex) 0%,var(--axon) 62%,#0A6F62 100%);
+.band{background:linear-gradient(118deg,var(--cortex) 0%,var(--axon) 62%,color-mix(in srgb,var(--axon) 78%,var(--ion-primary)) 100%);
   border-radius:var(--r-xl);padding:clamp(34px,5vw,56px);position:relative;
   overflow:hidden;border:1px solid rgba(var(--syn-rgb),.18)}
 .band::after{content:'';position:absolute;right:-90px;top:-90px;width:330px;height:330px;
@@ -338,7 +338,7 @@ h1.title{font-size:var(--fs-h1);font-weight:600;line-height:var(--lh-display);le
 .band.fam{background:var(--sulco-primary);border-color:color-mix(in srgb,var(--fam-primary) 22%,transparent)}
 .band.fam::before{content:'';position:absolute;inset:0;
   background-image:linear-gradient(rgba(var(--tom),.035) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--tom),.035) 1px,transparent 1px);
-  background-size:28px 28px;-webkit-mask-image:linear-gradient(90deg,transparent 35%,#000);mask-image:linear-gradient(90deg,transparent 35%,#000)}
+  background-size:28px 28px;-webkit-mask-image:linear-gradient(90deg,transparent 35%,black);mask-image:linear-gradient(90deg,transparent 35%,black)}
 .band.fam::after{right:-12%;top:auto;bottom:-60%;width:70%;height:auto;aspect-ratio:1;filter:blur(40px);
   background:radial-gradient(circle,color-mix(in srgb,var(--fam-primary) 38%,transparent),transparent 68%)}
 .band.fam .band-txt{max-width:62%}
@@ -443,7 +443,7 @@ h1.title{font-size:var(--fs-h1);font-weight:600;line-height:var(--lh-display);le
 /* Confirmação passageira (4,2 s). Nunca uma decisão. */
 .nd-toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:99;
   display:flex;flex-direction:column;gap:8px;align-items:center;width:max-content;max-width:92vw}
-.toast{background:#151B19;border:1px solid var(--line2);color:var(--ink);
+.toast{background:var(--toast);border:1px solid var(--line2);color:var(--ink);
   border-radius:12px;padding:12px 20px;font-size:var(--fs-sm);box-shadow:0 12px 40px rgba(var(--sombra-rgb),.5);
   display:inline-flex;align-items:center;gap:11px}
 .toast .dt{width:7px;height:7px;border-radius:1px;flex:none;background:var(--st,var(--fn-nominal-primary))}
@@ -546,13 +546,13 @@ h1.title{font-size:var(--fs-h1);font-weight:600;line-height:var(--lh-display);le
 /* ---------- background ---------- */
 .blob{position:absolute;border-radius:50%;filter:blur(120px);will-change:transform;opacity:.32}
 .b1{width:56vmax;height:56vmax;left:-18vmax;top:-24vmax;
-  background:radial-gradient(circle,#00594F 0%,rgba(0,89,79,0) 70%);
+  background:radial-gradient(circle,var(--axon) 0%,transparent 70%);
   animation:fl1 38s ease-in-out infinite alternate}
 .b2{width:42vmax;height:42vmax;right:-16vmax;top:8vmax;opacity:.2;
-  background:radial-gradient(circle,#0B7D6E 0%,rgba(11,125,110,0) 70%);
+  background:radial-gradient(circle,color-mix(in srgb,var(--axon) 78%,var(--ion-primary)) 0%,transparent 70%);
   animation:fl2 32s ease-in-out infinite alternate}
 .b3{width:30vmax;height:30vmax;left:36vw;bottom:-18vmax;opacity:.06;
-  background:radial-gradient(circle,#CEDC00 0%,rgba(206,220,0,0) 70%);
+  background:radial-gradient(circle,var(--synapse) 0%,transparent 70%);
   animation:fl3 44s ease-in-out infinite alternate}
 [data-tema="claro"] .b1{opacity:.16}
 [data-tema="claro"] .b2{opacity:.12}
@@ -570,6 +570,8 @@ body.lt-recolhida{--lt-w:var(--lt-trilho)}
   transition:opacity .15s}
 .lt-marca{flex:1}
 .lt-nome .logotype{font-size:14.5px;line-height:1}
+/* o texto no lugar do imagotipo quando a imagem não carrega */
+.logotype{font-family:var(--fd);font-weight:700;font-size:16.5px;letter-spacing:-.02em;color:var(--ink);white-space:nowrap}
 .hd-tag{font-family:var(--fd);font-weight:600;font-size:9px;letter-spacing:.16em;text-transform:uppercase;
   color:var(--syn-tx);border:1px solid rgba(var(--syn-rgb),.35);border-radius:6px;padding:2px 8px;white-space:nowrap}
 .lt-busca{flex:none;display:flex;align-items:center;gap:11px;height:36px;margin:12px 10px 8px;
@@ -745,7 +747,7 @@ body.lt-recolhida{--lt-w:var(--lt-trilho)}
              0 26px 46px -14px rgba(var(--sombra-rgb),calc(.85 * var(--sombra-k)))}
 .kb-card.sinalizada{border-color:rgba(var(--warn-rgb),.32)}
 .kb-card.concluida::before{display:none}
-[data-tema="claro"] .kb-card{background:#FFFFFF}
+[data-tema="claro"] .kb-card{background:var(--panel)}
 .kb-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px}
 .kb-ids{display:flex;align-items:center;min-width:0}
 .kb-top .cod{font-family:var(--fm);font-size:10px;letter-spacing:.06em;color:var(--syn-tx)}
@@ -888,7 +890,7 @@ button.et:hover{border-color:var(--dim);color:var(--ink)}
 .calm-cel.hoje .calm-n{background:var(--syn);color:var(--deep);font-weight:600}
 .calm-chip{display:flex;align-items:center;gap:5px;width:100%;min-width:0;text-align:left;font-size:11.5px;line-height:1.3;
   padding:3px 6px;border-radius:6px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  background:rgba(var(--tom),.04);border-left:3px solid var(--cc,#8E8E93)}
+  background:rgba(var(--tom),.04);border-left:3px solid var(--cc,var(--idle))}
 .calm-chip:hover{background:rgba(var(--tom),.09)}
 .calm-chip .h{font-family:var(--fm);font-size:10px;color:var(--muted);flex:none}
 .calm-pts{display:inline-flex;gap:2px;flex:none}
@@ -1031,3 +1033,120 @@ body.lt-recolhida .lt-marca>.lt-simbolo{display:block}
 @keyframes fl2{from{transform:translate(0,0) scale(1.08)}to{transform:translate(-10vw,10vh) scale(.94)}}
 @keyframes fl3{from{transform:translate(0,0) scale(1)}to{transform:translate(-7vw,-12vh) scale(1.2)}}
 @keyframes gira{to{transform:rotate(360deg)}}
+
+/* ============================================================
+   Templates de tela (PLANO-DESIGN-SYSTEM.md, seção 3)
+   Toda tela de app é um destes: L lista, O objeto, F fluxo,
+   P painel, E leitura, A ajustes, T área de trabalho. O SOMA monta
+   com cabecalho() e as funções layout*() da casca.
+   ============================================================ */
+
+/* ---------- o cabeçalho único ----------------------------- */
+/* voltar (ou trilha), eyebrow com o espaço, h1 com as ações na mesma
+   linha, linha de meta (código, estado), lead raro. O SectionNav vem
+   logo depois, sempre no mesmo lugar. Um tamanho de título só. */
+.cab{display:flex;flex-direction:column;align-items:flex-start;gap:var(--s3);margin:var(--s6) 0 var(--s6)}
+.cab+.nav1{margin-top:calc(var(--s2) * -1)}
+.cab-voltar{display:inline-flex;align-items:center;gap:7px;min-height:32px;margin:calc(var(--s2) * -1) 0 calc(var(--s1) * -1);
+  font-size:var(--fs-sm);color:var(--muted);transition:color var(--t-fast)}
+.cab-voltar:hover{color:var(--ink)}
+.cab-voltar .s{display:inline-block;transition:transform var(--t-fast)}
+.cab-voltar:hover .s{transform:translateX(-3px)}
+.cab .trilha{margin-bottom:calc(var(--s1) * -1)}
+.cab-linha{display:flex;align-items:center;justify-content:space-between;gap:var(--s3) var(--s5);flex-wrap:wrap;width:100%}
+.cab h1{margin:0;min-width:0;font-family:var(--fd);font-weight:600;font-size:var(--fs-h2);line-height:1.06;
+  letter-spacing:var(--tr-heading);text-wrap:balance;overflow-wrap:anywhere}
+.cab-acoes{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.cab-meta{display:flex;align-items:center;flex-wrap:wrap;gap:var(--s2) var(--s4);font-size:var(--fs-sm);color:var(--muted)}
+/* código do objeto: dado, então Plex Mono, numa Tag; nunca no eyebrow */
+.cab-cod{font-family:var(--fm);font-size:12px;line-height:1.5;color:var(--ink);white-space:nowrap;
+  border:1px solid var(--line2);border-radius:var(--r-tag);padding:1px 8px}
+.cab-lead{margin:0;max-width:var(--measure);color:var(--muted);font-size:var(--fs-body);line-height:var(--lh-body)}
+/* no celular, só a ação principal fica à vista; o resto vai para "Mais ações" */
+.cab-mais{display:none;position:relative}
+.cab-mais>summary{list-style:none;cursor:pointer}
+.cab-mais>summary::-webkit-details-marker{display:none}
+.cab-mais-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:220px;padding:6px;display:flex;flex-direction:column;gap:2px;
+  background:var(--panel);border:1px solid var(--line2);border-radius:var(--r-sm)}
+.cab-mais-pop .btn{width:100%;justify-content:flex-start;border-color:transparent;background:none}
+.cab-mais-pop .btn:hover{background:rgba(var(--tom),.06)}
+@media (max-width:700px){
+  .cab-acoes>.sec{display:none}
+  .cab-mais{display:block}
+}
+
+/* ---------- larguras ------------------------------------- */
+.tpl-f{max-width:var(--w-fluxo)}
+.tpl-e{max-width:var(--w-leitura)}
+
+/* ---------- L: barra de ferramentas da lista -------------- */
+.ferramentas{display:flex;align-items:center;flex-wrap:wrap;gap:var(--s3);margin:0 0 var(--s4)}
+.ferramentas .busca{flex:1 1 260px;max-width:420px}
+.ferramentas .busca input{width:100%}
+.ferramentas .total{margin-left:auto;font-size:var(--fs-xs);color:var(--dim);white-space:nowrap}
+.ferramentas .total b{font-family:var(--fm);font-weight:400;color:var(--muted)}
+
+/* ---------- O: objeto, com a lateral ---------------------- */
+.objeto{display:grid;grid-template-columns:minmax(0,1fr) var(--w-lateral);gap:var(--s6);align-items:start}
+.objeto-lateral{position:sticky;top:var(--s6);display:flex;flex-direction:column;gap:var(--s4)}
+@media (max-width:960px){.objeto{grid-template-columns:minmax(0,1fr)}.objeto-lateral{position:static;order:-1}}
+
+/* SpecList: pares de chave e valor */
+.spec{margin:0;display:flex;flex-direction:column}
+.spec>div{display:grid;grid-template-columns:minmax(96px,40%) minmax(0,1fr);gap:var(--s3);padding:10px 0;border-top:1px solid var(--line)}
+.spec>div:first-child{border-top:0;padding-top:0}
+.spec dt{font-family:var(--fd);font-weight:600;font-size:10.5px;line-height:1.9;letter-spacing:var(--tr-label);text-transform:uppercase;color:var(--dim)}
+.spec dd{margin:0;min-width:0;font-size:var(--fs-sm);color:var(--ink);overflow-wrap:anywhere}
+.spec dd.num{font-family:var(--fm);font-size:13px}
+
+/* ---------- F: fluxo em etapas ----------------------------- */
+/* etapas são progresso, não seções: nunca o SectionNav */
+.etapas{list-style:none;margin:0 0 var(--s6);padding:0;display:grid;grid-auto-columns:minmax(0,1fr);grid-auto-flow:column;gap:var(--s2)}
+.etapas li{display:flex;flex-direction:column;gap:8px;min-width:0}
+.etapas li::before{content:'';height:2px;background:var(--line2)}
+.etapas li.feita::before,.etapas li.atual::before{background:var(--syn-borda)}
+.etapas a,.etapas span.r{display:flex;align-items:baseline;gap:8px;min-width:0;font-size:var(--fs-sm);color:var(--dim)}
+.etapas .n{font-family:var(--fm);font-size:11px;color:var(--dim)}
+.etapas .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.etapas li.feita a,.etapas li.feita span.r{color:var(--muted)}
+.etapas li.atual a,.etapas li.atual span.r{color:var(--ink);font-weight:600}
+.etapas a:hover{color:var(--ink)}
+@media (max-width:640px){.etapas li:not(.atual) .t{display:none}}
+.fluxo-corpo{display:flex;flex-direction:column;gap:var(--s5)}
+/* a barra de ações fica presa embaixo: salvamento à esquerda, ação principal à direita */
+.barra-acoes{position:sticky;bottom:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:var(--s3);flex-wrap:wrap;
+  margin-top:var(--s7);padding:var(--s3) 0;border-top:1px solid var(--line);background:var(--bg)}
+.barra-acoes .dir{display:flex;align-items:center;gap:var(--s2);margin-left:auto}
+.salvo{display:inline-flex;align-items:center;gap:8px;font-size:var(--fs-xs);color:var(--dim)}
+.salvo::before{content:'';width:6px;height:6px;background:var(--dim)}
+.salvo.ok::before{background:var(--ok)}
+.salvo.pendente::before{background:var(--warn)}
+
+/* ---------- E: leitura ------------------------------------- */
+.artigo{display:flex;flex-direction:column;gap:var(--s3)}
+.artigo+.artigo{border-top:1px solid var(--line);padding-top:var(--s7);margin-top:var(--s7)}
+.artigo-meta{display:flex;align-items:center;flex-wrap:wrap;gap:var(--s2) var(--s3);font-size:var(--fs-xs);color:var(--muted)}
+.artigo h2{margin:0;font-size:22px;font-weight:600;line-height:1.2}
+.artigo .sub{margin:0;color:var(--muted);font-size:var(--fs-body)}
+.artigo img{display:block;width:100%;height:auto;border-radius:var(--r)}
+
+/* ---------- A: ajustes ------------------------------------- */
+.ajustes{display:flex;flex-direction:column}
+.ajuste{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:var(--s3) var(--s7);padding:var(--s5) 0;border-top:1px solid var(--line)}
+.ajuste:first-child{border-top:0;padding-top:0}
+.ajuste h3{margin:0 0 4px;font-size:var(--fs-sm);font-weight:600;letter-spacing:0}
+.ajuste p{margin:0;font-size:var(--fs-xs);color:var(--muted);line-height:1.55}
+.ajuste .controle{display:flex;flex-direction:column;align-items:flex-start;gap:var(--s2);min-width:0}
+.ajustes-pe{display:flex;justify-content:flex-end;gap:var(--s2);padding-top:var(--s4);border-top:1px solid var(--line)}
+@media (max-width:760px){.ajuste{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------- estados ---------------------------------------- */
+.estado-erro{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);flex-wrap:wrap}
+.skel-cab{display:flex;flex-direction:column;gap:12px;margin:var(--s6) 0}
+.skel-cab .skel:nth-child(1){width:90px;height:11px}
+.skel-cab .skel:nth-child(2){width:min(340px,70%);height:34px}
+.skel-linha{height:44px}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
+/* carregando só aparece se passar de ~300 ms (PADROES §6) */
+.aparece{animation:nd-aparece .2s .3s both}
+@keyframes nd-aparece{from{opacity:0}to{opacity:1}}
