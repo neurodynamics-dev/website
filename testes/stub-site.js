@@ -15,7 +15,7 @@
       reacoes:{ '👏':3, '❤️':1 }, ref:'f1' },
     { tipo:'topico', slug:null, titulo:'Seminário aberto na sexta', resumo:'Às 14h no auditório do bloco E',
       texto:'Aberto a todos. Inscrição na porta.', autor:'Ana Figueiredo', publicado_em:'2026-10-08T12:00:00Z', imagem:null,
-      reacoes:{}, ref:'f2' }
+      reacoes:null, ref:'f2' }
   ];
   const DETALHE = { 'ortese-passa-no-teste': { status:'ok', slug:'ortese-passa-no-teste', redirecionar:false, tipo:'noticia',
     titulo:'Órtese passa no teste de bancada', subtitulo:'Dez mil ciclos sem folga', texto:longo, autor:'Equipe de Comunicação',
