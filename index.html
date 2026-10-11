@@ -361,6 +361,70 @@ a.chan:hover .go{color:var(--syn)}
 .toast{background:var(--toast);border:1px solid var(--line2);color:var(--ink);border-radius:12px;
   padding:12px 20px;font-size:13.5px;}
 .ic{width:20px;height:20px;flex-shrink:0}
+
+/* ============ NEWS (2.19.1) ============ */
+.news-grid{display:grid;grid-template-columns:1fr;gap:18px;align-items:start}
+@media (min-width:900px){.news-grid{grid-template-columns:1fr 1fr}}
+.news-it{border:1px solid var(--line);border-radius:var(--r);background:var(--card);overflow:hidden;
+  display:flex;flex-direction:column;min-width:0}
+.news-it .img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--panel)}
+.news-it .bd{padding:22px 22px 24px;display:flex;flex-direction:column;gap:12px;flex:1;min-width:0}
+.news-it h2{font-size:21px;font-weight:600;line-height:1.2}
+.news-it h2 a:hover{color:var(--syn)}
+.news-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:12px;color:var(--muted)}
+.news-tag{display:inline-flex;align-items:center;font-family:var(--fd);font-weight:600;font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;padding:3px 8px;border-radius:var(--r-tag);border:1px solid var(--line2);color:var(--dim)}
+.news-sub{color:var(--muted);font-size:15px}
+.news-txt{font-size:15px;line-height:1.7;overflow-wrap:anywhere}
+.news-txt p+p,.news-txt p+ul,.news-txt ul+p{margin-top:14px}
+.news-txt ul{padding-left:20px}
+.news-txt a{text-decoration:underline;text-underline-offset:3px}
+.news-ler{font-family:var(--fd);font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+  display:inline-flex;align-items:center;gap:8px;margin-top:auto}
+.news-ler:hover{color:var(--syn)}
+.news-ler .ar{width:14px;height:14px;display:inline-flex}
+.news-mais{margin-top:26px;display:flex;justify-content:center}
+.news-msg{color:var(--muted);padding:26px 0}
+.reacoes{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.reacao{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:2px 10px;border-radius:var(--r-chip);
+  background:rgba(var(--tom),.04);border:1px solid var(--line2);color:var(--muted);font-size:13px;line-height:1.3}
+.reacao .n{font-family:var(--fm);font-size:11.5px}
+a.reacao:hover{border-color:var(--dim);color:var(--ink)}
+.news-art{max-width:720px}
+.news-art .voltar{display:inline-flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);margin-bottom:26px}
+.news-art .voltar:hover{color:var(--ink)}
+.news-art h1{font-size:clamp(32px,5vw,52px);font-weight:600;line-height:1.08;letter-spacing:-.02em;margin:16px 0 14px}
+.news-art .lead{font-size:clamp(15.5px,1.7vw,18px);color:var(--muted);margin-bottom:28px}
+.news-art figure{margin:0 0 26px}
+.news-art figure img{display:block;width:100%;height:auto;border-radius:var(--r)}
+.news-art figcaption{margin-top:8px;font-size:12.5px;color:var(--muted)}
+.news-art .news-txt{font-size:16.5px}
+.news-art .rodape{margin-top:34px;padding-top:22px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:14px}
+.news-art .dica{font-size:12.5px;color:var(--muted)}
+.news-art .acts{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.nl{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--card);padding:clamp(24px,4vw,40px);
+  margin-top:clamp(50px,8vh,90px);display:grid;grid-template-columns:1fr;gap:20px}
+@media (min-width:900px){.nl{grid-template-columns:1fr 1.2fr;align-items:start}}
+.nl h2{font-size:clamp(24px,3.2vw,34px);font-weight:600;line-height:1.1}
+.nl .lead{color:var(--muted);margin-top:10px}
+.nl form{display:flex;flex-direction:column;gap:14px;min-width:0}
+.nl label.campo{display:flex;flex-direction:column;gap:6px;font-size:12px;font-family:var(--fd);font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.nl input[type=text],.nl input[type=email]{height:46px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);
+  background:rgba(var(--tom),.03);color:var(--ink);font:inherit;font-size:15px;text-transform:none;letter-spacing:0;width:100%}
+.nl input[type=text]:focus-visible,.nl input[type=email]:focus-visible,.nl input[type=checkbox]:focus-visible{outline:2px solid var(--syn-borda);outline-offset:2px}
+.nl .aceite{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--muted);line-height:1.5}
+.nl .aceite input{margin-top:3px;width:18px;height:18px;flex-shrink:0;accent-color:var(--syn)}
+.nl .erro{font-size:12.5px;color:var(--bad-tx);text-transform:none;letter-spacing:0;font-family:var(--f);font-weight:400}
+.nl .ok{color:var(--ink);font-size:15px;border-left:2px solid var(--syn);padding:6px 0 6px 18px}
+.nl-conf{max-width:640px}
+.nl-conf p{font-size:17px;margin-bottom:22px}
+.home-news{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:900px){.home-news{grid-template-columns:repeat(3,1fr)}}
+.home-news a{border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:20px 20px 22px;
+  display:flex;flex-direction:column;gap:10px;min-width:0}
+.home-news a:hover{border-color:var(--line2)}
+.home-news h3{font-size:17px;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -793,6 +857,56 @@ fr:{ label:'FR', htmlLang:'fr',
          'Wearables':'Wearables', 'Infrastructure':'Infrastructure', 'Interoperability':'Interopérabilité' }
 }
 };
+
+
+/* 2.19.1: as notícias (conteúdo sempre em português, vindo do SOMA) e a newsletter */
+const NEWS_L = {
+  en:{ nav:'News', title:'News | NeuroDynamics',
+    news:{ eyebrow:'From the lab', h1:'News', lead:'What the team has been up to, in its own words.', noticia:'Story', topico:'Brief',
+      pt:'In Portuguese', ler:'Read the full story', mais:'Load more', vazio:'No news yet.', erro:'We could not load the news.',
+      tentar:'Try again', voltar:'All news', texto:'Text: {a}', reagir:'React',
+      reagirDica:'Members and alumni react with their SOMA account.', copiar:'Copy link', copiado:'Link copied.',
+      naoAchou:'We could not find this story.', home:'Recent news', todas:'See all' },
+    nl:{ h:'Newsletter', lead:'Once a month, what is new at the lab.', nome:'Name', email:'E-mail',
+      consent:'I want to receive the NeuroDynamics monthly newsletter and know I can unsubscribe at any time.', enviar:'Subscribe',
+      ok:'If the address is correct, you will receive an e-mail to confirm your subscription.',
+      email_invalido:'Please check the e-mail address.', nome_invalido:'Please write your name.',
+      consentimento:'Tick the box to agree to receive it.', limite:'Too many requests right now. Please try again later.',
+      erro:'Something went wrong. Please try again.', confirmando:'Confirming your subscription…',
+      confirmado:'Subscription confirmed. The next issue will reach your inbox.',
+      invalido:'This link is invalid or has expired. Please subscribe again.' } },
+  pt:{ nav:'Notícias', title:'Notícias | NeuroDynamics',
+    news:{ eyebrow:'Do laboratório', h1:'Notícias', lead:'O que a equipe tem feito, contado por ela.', noticia:'Notícia', topico:'Breve',
+      pt:'', ler:'Ler a matéria completa', mais:'Carregar mais', vazio:'Nenhuma notícia publicada ainda.',
+      erro:'Não foi possível carregar as notícias.', tentar:'Tentar de novo', voltar:'Todas as notícias', texto:'Texto: {a}',
+      reagir:'Reagir', reagirDica:'Membros e ex-membros reagem com a conta do SOMA.', copiar:'Copiar link', copiado:'Link copiado.',
+      naoAchou:'Não encontramos esta notícia.', home:'Notícias recentes', todas:'Ver todas' },
+    nl:{ h:'Newsletter', lead:'Uma vez por mês, o que saiu de novo no laboratório.', nome:'Nome', email:'E-mail',
+      consent:'Quero receber a newsletter mensal da NeuroDynamics e sei que posso me descadastrar a qualquer momento.', enviar:'Inscrever',
+      ok:'Se o endereço estiver certo, você vai receber um e-mail para confirmar a inscrição.',
+      email_invalido:'Confira o e-mail.', nome_invalido:'Escreva o seu nome.', consentimento:'Marque a caixa para concordar com o envio.',
+      limite:'Muitos pedidos agora. Tente de novo mais tarde.', erro:'Não foi possível enviar. Tente de novo.',
+      confirmando:'Confirmando a inscrição…', confirmado:'Inscrição confirmada. A próxima edição chega no seu e-mail.',
+      invalido:'Este link é inválido ou expirou. Faça a inscrição de novo.' } },
+  fr:{ nav:'Actualités', title:'Actualités | NeuroDynamics',
+    news:{ eyebrow:'Du laboratoire', h1:'Actualités', lead:'Ce que fait l\'équipe, racontée par elle-même.', noticia:'Article', topico:'Brève',
+      pt:'En portugais', ler:'Lire l\'article', mais:'Voir plus', vazio:'Aucune actualité pour l\'instant.',
+      erro:'Impossible de charger les actualités.', tentar:'Réessayer', voltar:'Toutes les actualités', texto:'Texte : {a}',
+      reagir:'Réagir', reagirDica:'Les membres et anciens membres réagissent avec leur compte SOMA.', copiar:'Copier le lien',
+      copiado:'Lien copié.', naoAchou:'Article introuvable.', home:'Actualités récentes', todas:'Tout voir' },
+    nl:{ h:'Newsletter', lead:'Une fois par mois, les nouveautés du laboratoire.', nome:'Nom', email:'E-mail',
+      consent:'Je souhaite recevoir la newsletter mensuelle de NeuroDynamics et je sais que je peux me désabonner à tout moment.',
+      enviar:'S\'inscrire', ok:'Si l\'adresse est correcte, vous recevrez un e-mail pour confirmer votre inscription.',
+      email_invalido:'Vérifiez l\'adresse e-mail.', nome_invalido:'Indiquez votre nom.', consentimento:'Cochez la case pour accepter l\'envoi.',
+      limite:'Trop de demandes en ce moment. Réessayez plus tard.', erro:'Une erreur est survenue. Réessayez.',
+      confirmando:'Confirmation en cours…', confirmado:'Inscription confirmée. Le prochain numéro arrivera dans votre boîte.',
+      invalido:'Ce lien est invalide ou a expiré. Inscrivez-vous à nouveau.' } }
+};
+for (const k of Object.keys(NEWS_L)){
+  L[k].nav.news = NEWS_L[k].nav; L[k].titles.news = NEWS_L[k].title;
+  L[k].titles.newsletter = 'Newsletter | NeuroDynamics';
+  L[k].news = NEWS_L[k].news; L[k].nl = NEWS_L[k].nl;
+}
 
 /* ============================================================
    FALLBACK PROJECTS — the site reads projects from Supabase
@@ -1353,6 +1467,8 @@ function pageHome(){
     </div>
   </section>
 
+  <section id="home-news" hidden></section>
+
   <section>
     <div class="band reveal">
       <span class="eyebrow">${t.band.eyebrow}</span>
@@ -1535,10 +1651,237 @@ function copyMail(){
     .catch(()=>toast(CONTACT_EMAIL));
 }
 
+
+/* ============================================================
+   NEWS (2.19.1) — a mesma fonte editorial do SOMA. Só o que foi
+   publicado no site chega aqui (noticias_publicas, noticia_publica);
+   o texto passa por mdSeguro e todo valor do banco por esc().
+   ============================================================ */
+const SLUG_OK = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const UUID_OK = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SITE_URL = 'https://neurodynamics.dev';
+const PORTAL_URL = 'https://membro.neurodynamics.dev';
+const EMOJIS = ['👏','❤️','🎉','💡','🚀','😮']; // auditar: ok, as reações são dado (o banco só aceita estes seis)
+const news = { itens:[], fim:false, vez:0 };
+
+/* o hash inteiro: lista, matéria ou confirmação da newsletter */
+function newsRota(){
+  const h = (location.hash || '').replace(/^#\/?/, '');
+  const [cam, q = ''] = h.split('?');
+  const seg = cam.split('/');
+  if (seg[0] === 'news') return seg[1] !== undefined && seg[1] !== '' ? { tipo:'materia', slug:seg[1] } : { tipo:'lista' };
+  if (seg[0] === 'newsletter') return { tipo:'confirmar', token:new URLSearchParams(q).get('t') || '' };
+  return { tipo:'' };
+}
+const imgPublica = u => typeof u === 'string' && /^noticias\//.test(u)
+  ? CONFIG.SUPABASE_URL + '/storage/v1/object/public/' + u.split('/').map(encodeURIComponent).join('/') : '';
+const dataLonga = d => d ? new Date(d).toLocaleDateString(T().htmlLang, { day:'numeric', month:'long', year:'numeric' }) : '';
+const tagTipo = tp => `<span class="news-tag">${esc(tp === 'noticia' ? T().news.noticia : T().news.topico)}</span>`;
+const tagPt = () => T().news.pt ? `<span class="news-tag">${esc(T().news.pt)}</span>` : '';
+
+/* o pouco de formatação que o editor do SOMA aceita, sem nada de HTML de fora */
+function mdSeguro(texto){
+  const inline = x => x
+    .replace(/\[([^\]\n]+)\]\(((?:[^()\s]|\([^()\s]*\))+)\)/g, (m, t, u) => /^https?:\/\//i.test(u.replace(/&amp;/g, '&'))
+      ? `<a href="${u}" target="_blank" rel="noopener">${t}</a>` : t)
+    .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+  return esc(String(texto || '').replace(/\r/g, '')).split(/\n\s*\n/).map(b => b.trim()).filter(Boolean).map(b => {
+    const linhas = b.split('\n');
+    if (linhas.every(l => /^- /.test(l))) return '<ul>' + linhas.map(l => `<li>${inline(l.slice(2))}</li>`).join('') + '</ul>';
+    return '<p>' + linhas.map(inline).join('<br>') + '</p>';
+  }).join('');
+}
+
+/* reações: só leitura no site; reagir é na página do SOMA */
+function reacoesSo(r){
+  return EMOJIS.filter(e => r && r[e] > 0).map(e => `<span class="reacao">${e} <span class="n">${Number(r[e])}</span></span>`).join('');
+}
+function reacoesBloco(it){
+  if (it.tipo !== 'noticia' || !it.slug) return '';
+  return `<div class="reacoes" aria-label="${esc(T().news.reagir)}">${reacoesSo(it.reacoes)}
+    <a class="reacao" href="${PORTAL_URL}/noticia.html?n=${encodeURIComponent(it.slug)}">${esc(T().news.reagir)}</a></div>`;
+}
+
+function newsItem(it){
+  const t = T().news, img = imgPublica(it.imagem), link = it.tipo === 'noticia' && SLUG_OK.test(it.slug || '');
+  return `<article class="news-it">
+    ${img ? `${link ? `<a href="#/news/${it.slug}" tabindex="-1" aria-hidden="true">` : ''}<img class="img" src="${esc(img)}" alt="${esc(it.titulo)}" loading="lazy">${link ? '</a>' : ''}` : ''}
+    <div class="bd">
+      <div class="news-meta">${tagTipo(it.tipo)}<span>${esc(dataLonga(it.publicado_em))}</span>${tagPt()}</div>
+      <h2>${link ? `<a href="#/news/${it.slug}">${esc(it.titulo)}</a>` : esc(it.titulo)}</h2>
+      ${it.resumo ? `<p class="news-sub">${esc(it.resumo)}</p>` : ''}
+      ${it.tipo === 'topico' && it.texto ? `<div class="news-txt">${mdSeguro(it.texto)}</div>` : ''}
+      ${link ? `<a class="news-ler" href="#/news/${it.slug}">${esc(t.ler)} <span class="ar">${IC.arrow}</span></a>` : ''}
+      ${reacoesBloco(it)}
+    </div>
+  </article>`;
+}
+
+function nlBloco(){
+  const t = T().nl;
+  return `<div class="nl" id="nl">
+    <div><span class="eyebrow">${esc(t.h)}</span><h2>${esc(t.h)}</h2><p class="lead">${esc(t.lead)}</p></div>
+    <form id="nl-form" novalidate onsubmit="nlEnviar(event)">
+      <label class="campo" for="nl-nome">${esc(t.nome)}
+        <input type="text" id="nl-nome" name="nome" autocomplete="name" maxlength="120">
+        <span class="erro" id="nl-e-nome" hidden></span></label>
+      <label class="campo" for="nl-email">${esc(t.email)}
+        <input type="email" id="nl-email" name="email" autocomplete="email" maxlength="200">
+        <span class="erro" id="nl-e-email" hidden></span></label>
+      <label class="aceite"><input type="checkbox" id="nl-aceite"> <span>${esc(t.consent)}</span></label>
+      <span class="erro" id="nl-e-aceite" hidden></span>
+      <div><button class="btn solid" type="submit" id="nl-btn">${esc(t.enviar)}</button></div>
+      <span class="erro" id="nl-e-geral" hidden role="alert"></span>
+    </form>
+  </div>`;
+}
+function nlErro(onde, msg){
+  for (const k of ['nome','email','aceite','geral']){ const e = $('#nl-e-' + k); if (e){ e.hidden = k !== onde; e.textContent = k === onde ? msg : ''; } }
+  const campo = { nome:'#nl-nome', email:'#nl-email', aceite:'#nl-aceite' }[onde];
+  document.querySelectorAll('#nl-form input').forEach(i => i.removeAttribute('aria-invalid'));
+  if (campo) $(campo).setAttribute('aria-invalid', 'true');
+}
+async function nlEnviar(ev){
+  ev.preventDefault();
+  const t = T().nl, nome = $('#nl-nome').value.trim(), email = $('#nl-email').value.trim();
+  if (!$('#nl-aceite').checked) return nlErro('aceite', t.consentimento);
+  const bt = $('#nl-btn'); bt.disabled = true; nlErro('', '');
+  try{
+    if (!sb) throw new Error('sem cliente');
+    const { data, error } = await sb.rpc('comunidade_inscrever', { p_email:email, p_nome:nome, p_consentimento:true });
+    if (error) throw error;
+    const st = data && data.status;
+    if (st === 'ok'){ $('#nl-form').outerHTML = `<p class="ok" role="status">${esc(t.ok)}</p>`; return; }
+    const onde = { email_invalido:'email', nome_invalido:'nome', consentimento:'aceite' }[st] || 'geral';
+    nlErro(onde, t[st] || t.erro);
+  }catch(_){ nlErro('geral', t.erro); }
+  finally{ if (document.body.contains(bt)) bt.disabled = false; }
+}
+
+function pageNews(){
+  const r = newsRota(), t = T().news;
+  if (r.tipo === 'materia') return `<div class="pg-head news-art" id="news-art"><p class="news-msg">…</p></div>`;
+  return `
+  <div class="pg-head">
+    <span class="eyebrow">${esc(t.eyebrow)}</span>
+    <h1>${esc(t.h1)}</h1>
+    <p class="lead">${esc(t.lead)}</p>
+  </div>
+  <section>
+    <div id="news-lista" aria-busy="true"><p class="news-msg">…</p></div>
+    <div class="news-mais" id="news-mais" hidden><button class="btn ghost" type="button" onclick="newsMais()">${esc(t.mais)}</button></div>
+    ${nlBloco()}
+  </section>`;
+}
+
+/* chamado depois do render: a vez descarta resposta de página que já saiu */
+function newsInit(){
+  const r = newsRota(), vez = ++news.vez;
+  if (r.tipo === 'materia') return materiaCarregar(r.slug, vez);
+  news.itens = []; news.fim = false;
+  newsCarregar(vez, true);
+}
+async function newsCarregar(vez, primeira){
+  const el = $('#news-lista'), t = T().news; if (!el) return;
+  const bt = $('#news-mais button'); if (bt) bt.disabled = true;
+  try{
+    if (!sb) throw new Error('sem cliente');
+    const ult = news.itens[news.itens.length - 1];
+    const { data, error } = await sb.rpc('noticias_publicas', ult ? { p_antes:ult.publicado_em, p_limite:12 } : { p_limite:12 });
+    if (error) throw error;
+    if (vez !== news.vez || !el.isConnected) return;
+    const itens = Array.isArray(data) ? data : [];
+    news.itens.push(...itens); news.fim = itens.length < 12;
+    if (primeira) el.innerHTML = news.itens.length ? '<div class="news-grid" id="news-grid"></div>' : `<p class="news-msg">${esc(t.vazio)}</p>`;
+    const g = $('#news-grid'); if (g) g.insertAdjacentHTML('beforeend', itens.map(newsItem).join(''));
+    $('#news-mais').hidden = news.fim;
+  }catch(_){
+    if (vez !== news.vez || !el.isConnected) return;
+    if (primeira) el.innerHTML = `<p class="news-msg">${esc(t.erro)}</p><button class="btn ghost" type="button" onclick="newsInit()">${esc(t.tentar)}</button>`;
+    else toast(t.erro);
+  }finally{ el.removeAttribute('aria-busy'); if (bt) bt.disabled = false; }
+}
+function newsMais(){ newsCarregar(news.vez, false); }
+
+async function materiaCarregar(slug, vez){
+  const el = $('#news-art'), t = T().news; if (!el) return;
+  const volta = `<a class="voltar" href="#/news">← ${esc(t.voltar)}</a>`;
+  if (!SLUG_OK.test(slug)){ el.innerHTML = `${volta}<p class="news-msg">${esc(t.naoAchou)}</p>`; return; }
+  try{
+    if (!sb) throw new Error('sem cliente');
+    const { data:n, error } = await sb.rpc('noticia_publica', { p_slug:slug });
+    if (error) throw error;
+    if (vez !== news.vez || !el.isConnected) return;
+    if (!n || n.status !== 'ok'){ el.innerHTML = `${volta}<p class="news-msg">${esc(t.naoAchou)}</p>`; return; }
+    if (n.redirecionar && SLUG_OK.test(n.slug || '')) history.replaceState(null, '', location.pathname + location.search + '#/news/' + n.slug);
+    document.title = (n.titulo || '') + ' | NeuroDynamics';
+    const figs = (n.imagens || []).map(i => ({ src:imgPublica(i.url), leg:i.legenda })).filter(i => i.src)
+      .map(i => `<figure><img src="${esc(i.src)}" alt="${esc(i.leg || n.titulo)}" loading="lazy">${i.leg ? `<figcaption>${esc(i.leg)}</figcaption>` : ''}</figure>`).join('');
+    el.innerHTML = `${volta}
+      <article>
+        <div class="news-meta">${tagTipo(n.tipo)}<span>${esc(dataLonga(n.publicado_em))}</span>${n.autor ? `<span>${esc(t.texto.replace('{a}', n.autor))}</span>` : ''}${tagPt()}</div>
+        <h1>${esc(n.titulo)}</h1>
+        ${n.subtitulo ? `<p class="lead">${esc(n.subtitulo)}</p>` : ''}
+        ${figs}
+        <div class="news-txt">${mdSeguro(n.texto)}</div>
+        <div class="rodape">
+          ${reacoesBloco(n)}
+          <p class="dica">${esc(t.reagirDica)}</p>
+          <div class="acts"><button class="btn ghost" type="button" onclick="materiaCopiar()">${IC.copy ? `<span class="ar">${IC.copy}</span>` : ''}${esc(t.copiar)}</button></div>
+        </div>
+      </article>`;
+    news.slug = n.slug;
+  }catch(_){
+    if (vez !== news.vez || !el.isConnected) return;
+    el.innerHTML = `${volta}<p class="news-msg">${esc(t.erro)}</p><button class="btn ghost" type="button" onclick="newsInit()">${esc(t.tentar)}</button>`;
+  }
+}
+function materiaCopiar(){
+  const u = SITE_URL + '/#/news/' + (news.slug || '');
+  navigator.clipboard?.writeText(u).then(() => toast(T().news.copiado)).catch(() => toast(u));
+}
+
+/* #/newsletter/confirmar?t=<token> */
+function pageNewsletterConfirm(){
+  return `<div class="pg-head nl-conf"><span class="eyebrow">${esc(T().nl.h)}</span><h1>${esc(T().nl.h)}</h1>
+    <div id="nl-conf"><p>${esc(T().nl.confirmando)}</p></div></div>`;
+}
+async function confirmarInit(){
+  const r = newsRota(), el = $('#nl-conf'), t = T().nl, vez = ++news.vez; if (!el) return;
+  const fim = (msg, ok) => { el.innerHTML = `<p role="status">${esc(msg)}</p><a class="btn ghost" href="#/news">${esc(ok ? T().news.voltar : t.h)}</a>`; };
+  if (r.tipo !== 'confirmar' || !UUID_OK.test(r.token)) return fim(t.invalido, false);
+  try{
+    if (!sb) throw new Error('sem cliente');
+    const { data, error } = await sb.rpc('comunidade_confirmar', { p_token:r.token });
+    if (error) throw error;
+    if (vez !== news.vez || !el.isConnected) return;
+    data && data.status === 'ok' ? fim(t.confirmado, true) : fim(t.invalido, false);
+  }catch(_){ if (vez === news.vez && el.isConnected) fim(t.erro, false); }
+}
+
+/* início: as três mais recentes; sem notícia ou com erro, a seção some */
+async function homeNews(){
+  const el = $('#home-news'), vez = news.vez; if (!el || !sb) return;
+  try{
+    const { data, error } = await sb.rpc('noticias_publicas', { p_limite:3 });
+    if (error || !Array.isArray(data) || !data.length || vez !== news.vez || !el.isConnected) return;
+    const t = T().news;
+    el.innerHTML = `<div class="sec-head"><span class="eyebrow">${esc(t.home)}</span>
+        <div><h2>${esc(t.home)}</h2></div></div>
+      <div class="home-news">${data.map(it => {
+        const link = it.tipo === 'noticia' && SLUG_OK.test(it.slug || '') ? '#/news/' + it.slug : '#/news';
+        return `<a href="${link}"><div class="news-meta">${tagTipo(it.tipo)}<span>${esc(dataLonga(it.publicado_em))}</span></div><h3>${esc(it.titulo)}</h3></a>`; }).join('')}</div>
+      <div class="pgrid-foot"><a class="btn ghost" href="#/news">${esc(t.todas)} <span class="ar">${IC.arrow}</span></a></div>`;
+    el.hidden = false;
+  }catch(_){}
+}
+
 /* ---------------- router ---------------- */
-const PAGES = { home:pageHome, about:pageAbout, projects:pageProjects, contact:pageContact };
+const PAGES = { home:pageHome, about:pageAbout, projects:pageProjects, contact:pageContact,
+                news:pageNews, newsletter:pageNewsletterConfirm };
 function route(){
-  const h = (location.hash || '#/').replace(/^#\//,'').split('/')[0];
+  const h = (location.hash || '#/').replace(/^#\//,'').split(/[/?]/)[0];
   return PAGES[h] ? h : 'home';
 }
 function render(r){
@@ -1555,6 +1898,9 @@ function render(r){
   NDCasca.menu(false);
   observe();
   if (r === 'about') pressInit();
+  if (r === 'news') newsInit();
+  if (r === 'newsletter') confirmarInit();
+  if (r === 'home'){ news.vez++; homeNews(); }
 }
 window.addEventListener('hashchange', ()=>{ render(route()); window.scrollTo({top:0,behavior:'instant'}); });
 
@@ -1564,7 +1910,7 @@ function paintChrome(){
   const t = T(), r = route();
   NDCasca.montar({
     site:'site', lang:state.lang, idiomas:LANGS, inicio:'#/', email:CONTACT_EMAIL,
-    links:['home','about','projects','contact'].map(k =>
+    links:['home','about','projects','news','contact'].map(k =>
       ({ href: k === 'home' ? '#/' : '#/' + k, rotulo:t.nav[k], chave:k, atual:k === r })),
     cta:{ href:'#/contact', rotulo:t.cta },
     desc:t.ft.desc,
