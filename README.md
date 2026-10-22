@@ -1,8 +1,8 @@
 # Site institucional — neurodynamics.dev
 
 Site principal da NeuroDynamics em **três idiomas** (inglês, português e
-francês, com seletor no cabeçalho): home, **Quem somos**, **Projetos** e
-**Contato**. Apresenta a equipe como uma **organização sem fins lucrativos**
+francês, com seletor no cabeçalho): home, **Quem somos**, **Projetos** (com
+uma página para cada projeto) e **Contato**. Apresenta a equipe como uma **organização sem fins lucrativos**
 de pesquisa e desenvolvimento em health-tech, nascida na Escola de Engenharia
 da UFMG e sediada no LABBIO. Arquivo único (`index.html`), no mesmo padrão dos
 demais apps do SOMA, com a base visual do site do processo seletivo (paleta,
@@ -12,19 +12,24 @@ vidro, fundo animado) em versão mais sóbria.
 
 | Arquivo        | O que é |
 |----------------|---------|
-| `index.html`   | O site (rotas por hash: `#/`, `#/about`, `#/projects`, `#/contact`) |
-| `admin.html`   | Painel para editar os projetos exibidos no site |
+| `index.html`   | O site (rotas por hash: `#/`, `#/about`, `#/projects`, `#/projects/<slug>`, `#/news`, `#/contact`) |
+| `anim/`        | As animações das páginas de projeto, uma por arquivo, e os pôsteres (ver [Animações](#animações)) |
+| `admin.html`   | Aviso de que a edição mudou para o portal; redireciona para `#/admin/site` do SOMA |
 | `assets/`      | Logos locais usadas no letreiro de parceiros |
+| `ds/`          | Tokens e casca do design system, copiados do repositório `brand` |
+| `scripts/`     | `posteres.mjs`, que gera os pôsteres das animações |
+| `testes/`      | Testes no navegador, sem banco (ver `testes/LEIAME.md`) |
 | `CNAME`        | Domínio do GitHub Pages (`neurodynamics.dev`) |
 
 ## Pré-requisitos
 
-Aplicar as migrações **`soma_v9.sql`** (tabela dos projetos) e
-**`soma_v13.sql`** (colunas de tradução) no SQL Editor do Supabase. As duas
-moram no repositório do SOMA (`neurodynamics-dev/nro-pessoal`), junto das
-demais migrações. Sem elas o site continua no ar com o conteúdo de reserva
-(bloco `FALLBACK_PROJECTS` no topo do `<script>`), mas a edição pelo painel
-fica indisponível.
+Aplicar as migrações **`soma_v9.sql`** (tabela dos projetos),
+**`soma_v13.sql`** (colunas de tradução) e **`2.21.0_site_projetos.sql`**
+(família, animação, números e produção de cada projeto) no SQL Editor do
+Supabase. Todas moram no repositório do SOMA (`neurodynamics-dev/membro`, pasta
+`db/`). Sem elas o site continua no ar com o conteúdo de reserva (bloco
+`FALLBACK_PROJECTS` no `<script>`), mas a edição pelo portal fica
+indisponível.
 
 > Ao colar SQL no Supabase, atenção ao travessão (—): em alguns caminhos de
 > cópia ele vira `--`, comenta o resto da linha e quebra a migração. Foi o
@@ -40,15 +45,18 @@ Sem escolha prévia, o site segue o idioma do navegador e cai no inglês.
 
 - **Textos das páginas:** bloco `L` no topo do `<script>` de `index.html`,
   com um objeto por idioma (`en`, `pt`, `fr`). É o único lugar a editar.
-- **Textos dos projetos:** no banco, em colunas por idioma — o inglês nas
-  colunas originais (`tagline`, `resumo`, `descricao`) e as traduções com
-  sufixo (`_pt`, `_fr`). O que ficar vazio em PT/FR cai no inglês.
+- **Textos dos projetos:** no banco, em colunas por idioma: o inglês nas
+  colunas originais (`tagline`, `resumo`, `descricao`; o mesmo vale para o
+  rótulo dos números e a nota da produção) e as traduções com sufixo
+  (`_pt`, `_fr`). O que ficar vazio cai no inglês e, sem inglês, no
+  português.
 - **Status e tags:** guardados uma única vez, em inglês, e traduzidos pelo
   site por dicionário (`status` e `tags` dentro de cada idioma no bloco `L`).
   Ao criar um status ou tag novo, acrescente a tradução lá.
 - **Números por extenso:** o título "Cinco frentes, uma direção" conta os
   projetos publicados; a lista `nums` de cada idioma tem as formas usadas
-  (em português, no feminino: "uma", "duas"…).
+  (em português, no feminino: "uma", "duas"…). O índice de projetos conta
+  no masculino ("Oito projetos"), pela lista `numsM` do português.
 - **Números das seções:** contados na hora de desenhar a página, então
   acrescentar ou remover uma seção (a de imprensa, por exemplo) nunca deixa
   buraco na numeração.
@@ -57,13 +65,11 @@ Sem escolha prévia, o site segue o idioma do navegador e cai no inglês.
 
 ## Como editar
 
-- **Projetos (Calima, Opalina, Órion, Deriva, Nebula…):** em
-  `https://<domínio>/admin.html`, com conta do SOMA de papel `admin` ou
-  `pessoal`. Nome, tagline, resumo, descrição, status, tags, ordem, imagem
-  e publicação. Os campos de texto têm **abas EN / PT / FR**; o que ficar
-  vazio em português ou francês cai no texto em inglês.
-  Enquanto `imagem_url` estiver vazia o site mostra o placeholder técnico;
-  ao subir as imagens definitivas, basta colar a URL.
+- **Projetos:** no portal do membro, em **Administração › Site
+  institucional** (`membro.neurodynamics.dev/#/admin/site`), com papel `admin`
+  ou `pessoal`. Ver [Páginas de projeto](#páginas-de-projeto). O supervisor de
+  um projeto do SOMA também propõe números e produção pela página do projeto
+  no portal; a gestão revisa e põe no ar.
 - **Imprensa (aba *Who we are*):** no portal do membro, em **Studio ›
   Configurações › Imprensa do site** (`membro.neurodynamics.dev/#/studio/config/imprensa`).
   O site lê a lista do banco na hora; os blocos `PRESS_VIDEOS` e
@@ -77,6 +83,89 @@ Sem escolha prévia, o site segue o idioma do navegador e cai no inglês.
   (hoje `hello@neurodynamics.dev`).
 - **Estrutura das páginas:** funções `pageHome/pageAbout/pageProjects/pageContact`
   no `<script>` de `index.html` (elas só montam o HTML; o texto vem do bloco `L`).
+  A página de cada projeto é montada por `pageProjeto` e suas partes
+  (`projetoTopo`, `projetoPalco`, `projetoCorpo`).
+
+## Páginas de projeto
+
+`#/projects` é o índice: um cartão de vidro por projeto publicado, na ordem
+do banco, com o pôster da animação e um filtro por fase. O primeiro ocupa a
+largura maior. Cada cartão abre `#/projects/<slug>`, uma página única, curta,
+feita para ver mais do que para ler:
+
+1. **Topo:** nome, a frase (`tagline`), fase, área e parceiros.
+2. **Palco:** a animação do projeto, em tela cheia na largura.
+3. **Por que existe:** um parágrafo (`descricao`). O resto do texto da
+   planilha fica fora de propósito; o público quer ver o impacto.
+4. **Em números:** poucos números grandes; três é a medida. Cada um diz se vem da
+   **literatura** (com fonte e link obrigatórios) ou do **projeto** (dado
+   nosso). A seção some quando não há número publicado.
+5. **Produção:** artigos, apresentações, estudos, parcerias, prêmios,
+   patentes e software, com situação e data. Quando há mais de um tipo,
+   aparece o filtro.
+6. **Próximo projeto** e a banda de contato na cor da família, com e-mail
+   já endereçado ("Projeto Órion").
+
+O site lê a lista por `site_projetos_publico()` e a página por
+`site_projeto_publico(slug)`, que devolve projeto, números e produção
+**publicados**. Se o banco não responder, a página vem da reserva.
+
+### Cores
+
+Cada projeto tem uma **família** das cores secundárias da marca (`ion`,
+`neuron`, `glia`, `retina`, `nexo`, `dendrito`, `lumen`, `ritmo`, `impulso`,
+`plexo`, `iris`), escolhida no portal. Ela pinta o cartão no hover, a borda
+dos números, a banda e o botão de contato da página; o vidro, o brilho e o
+desfoque continuam nas cores principais (Cortex, Axon, Synapse), como manda
+o guia da marca. Uma família por superfície.
+
+### O que se preenche no portal
+
+Em **Administração › Site institucional**, três abas:
+
+- **Páginas:** nome, slug, fase, ordem, família, animação, vínculo com o
+  projeto do SOMA, os textos (PT, EN, FR), áreas, imagem e publicação.
+- **Números:** valor (ou faixa, "13 a 30"), casas decimais, unidade, prefixo
+  ("mais de", "até", "cerca de"), rótulo nos três idiomas, origem e fonte.
+  Ver a prévia antes de salvar: é como o site escreve.
+- **Produção:** tipo, título (como foi publicado), veículo, situação, data,
+  link, logo (parcerias) e nota.
+
+O supervisor do projeto, na página do projeto no portal, vê o cartão **No
+site** e acrescenta números e produção como rascunho; só a gestão publica.
+Item no ar não se edita pelo supervisor (o banco recusa com `no_ar`).
+
+Regra para números: **nenhum sem fonte verificável.** Da literatura, o link
+para o artigo; do projeto, só o que a equipe mede ou especifica. Na dúvida,
+o projeto fica sem número, como Gaia, Zéfiro e Aurora hoje.
+
+## Animações
+
+Cada animação é uma página em `anim/<nome>.html` que o site embute num
+`iframe` (`anim/<nome>.html?lang=pt`). Hoje: `opalina`, `orion`, `calima`,
+`nebula`, `equio`, `aurora`, `gaia` e `zefiro`. A escolha é feita no portal;
+um projeto sem animação mostra o placeholder técnico.
+
+- **3D** (Opalina, Órion, Calima, Nebula, Équio, Aurora): three.js 0.185.1 do
+  jsDelivr e o modelo humano `anim/modelo/humano.glb`. Eletrodos, correntes e
+  EEG são pintados no próprio modelo; os rótulos usam Archivo, como o site.
+- **2D** (Gaia, Zéfiro): `anim/cena2d.js`, canvas puro, no mesmo traço.
+- `anim/anim.js` é comum a todas: lê `?lang` (pt, en, fr), traz os rótulos
+  traduzidos, o botão de pausa (que respeita `prefers-reduced-motion`) e avisa
+  a altura à página (`postMessage({ nd:'anim', h })`), que ajusta o palco.
+- `?poster=1&t=<segundos>` congela a cena sem rótulos: é o que gera os
+  pôsteres de `anim/posters/`, usados no cartão do índice e no fundo do palco
+  enquanto a animação carrega. Ao mudar uma animação, gere de novo:
+
+```sh
+python3 -m http.server 8766 -d . &
+node scripts/posteres.mjs nebula        # sem nome: todas
+```
+
+Animação nova segue o mesmo caminho: copiar a mais próxima, trocar a cena,
+acrescentar o nome em `ANIMACOES` (`index.html`), em `SITE_ANIMACOES`
+(`membro/mod-site.js`), na lista da restrição de `site_projetos.animacao`
+(migração nova no SOMA) e em `QUADROS` (`scripts/posteres.mjs`).
 
 ## Imprensa
 
@@ -222,7 +311,10 @@ Cloudflare, o apex e o `www` apontam para o GitHub Pages (CNAME para
 ## Segurança
 
 O site usa apenas a chave `anon` do Supabase e lê o banco exclusivamente
-pela função `security definer` da migração (`site_projetos_publico`), que
-devolve só projetos publicados. A tabela `site_projetos` não tem política
-para `anon`; a escrita exige login (contas do SOMA) e papel `admin` ou
-`pessoal` — o `admin.html` é só interface, a regra mora no banco.
+pelas funções `security definer` (`site_projetos_publico` e
+`site_projeto_publico`), que devolvem só o que está publicado. As tabelas
+`site_projetos`, `site_projeto_numeros` e `site_projeto_saidas` não têm
+política para `anon`; a escrita exige login no SOMA e papel `admin` ou
+`pessoal` (ou ser supervisor do projeto vinculado, só em rascunho). A regra
+mora no banco, não na interface. Os textos vindos do banco entram na página
+sempre escapados; links só `https://`.

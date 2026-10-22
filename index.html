@@ -19,7 +19,7 @@
   --abertura:rgba(var(--tom),.028);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;overflow-x:clip} /* a luz atrás do vidro (.luz) passa da borda; nunca vira rolagem lateral */
 body{font-family:var(--f);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.65;
   -webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh}
 h1,h2,h3,h4{font-family:var(--fd);letter-spacing:-.015em}
@@ -136,21 +136,18 @@ section{margin:0 0 clamp(90px,12vh,150px)}
 
 /* ============ PROJECT CARDS (home preview) ============ */
 .pgrid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
-.pcard{grid-column:span 6;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;
-  background:var(--card);backdrop-filter:blur(6px);display:flex;flex-direction:column;
-  transition:transform .25s cubic-bezier(.22,1,.36,1), border-color .25s}
-.pcard:hover{transform:translateY(-5px);border-color:var(--line2)}
+.pcard{grid-column:span 6;overflow:hidden;display:flex;flex-direction:column;
+  transition:transform .45s var(--ease), border-color .25s}
+.pcard:hover{transform:translateY(-5px);border-color:color-mix(in srgb,var(--fam-medium) 55%,transparent)}
 .pcard.w7{grid-column:span 7}.pcard.w5{grid-column:span 5}
-.pcard .ph{border:none;border-bottom:1px solid var(--line);border-radius:0}
+.pcard:hover .pj-img img{transform:scale(1.04)}
 .pcard .body{padding:22px 24px 24px;display:flex;flex-direction:column;gap:8px;flex:1}
 .pcard .top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-.pcard h3{font-size:21px;font-weight:600}
-.pcard .st{font-family:var(--fd);font-weight:600;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--muted);border:1px solid var(--line2);border-radius:3px;padding:3px 8px;white-space:nowrap}
-.pcard .tg{font-size:13.5px;color:var(--muted);line-height:1.55}
+.pcard h3{font-size:23px;font-weight:600;letter-spacing:-.02em}
+.pcard .tg{font-family:var(--fd);font-size:15px;font-weight:500;line-height:1.4}
 .pcard .go{margin-top:auto;padding-top:10px;font-family:var(--fd);font-weight:600;font-size:11px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--dim);display:inline-flex;align-items:center;gap:8px;transition:color .15s}
-.pcard:hover .go{color:var(--syn)}
+.pcard:hover .go{color:var(--fam-medium)}
 .pgrid-foot{display:flex;justify-content:flex-end;margin-top:26px}
 .pgrid-foot .m{display:none}
 @media (max-width:860px){
@@ -300,25 +297,170 @@ a.chan:hover .go{color:var(--syn)}
   .vacts{width:100%;margin-left:0;justify-content:flex-end}
 }
 
-/* ============ PROJECTS PAGE ============ */
-.case{display:grid;grid-template-columns:1fr 1.05fr;gap:clamp(24px,4vw,56px);align-items:center;
-  padding:clamp(40px,6vh,64px) 0;border-top:1px solid var(--line)}
-.case:last-of-type{border-bottom:1px solid var(--line)}
-.case:nth-of-type(even) .case-media{order:-1}
-@media (max-width:860px){
-  .case{grid-template-columns:1fr}
-  .case:nth-of-type(even) .case-media{order:0}
+/* ============ FAMÍLIAS ============ */
+/* Cada projeto tem uma família secundária do manual: chapada, em
+   texto, linha e preenchimento. Brilho e vidro são do conjunto
+   primário (Cortex, Axon); a única exceção é a banda de família. */
+.f-ion{--fam-light:var(--ion-light);--fam-medium:var(--ion-medium);--fam-primary:var(--ion-primary);--fam-dark:var(--ion-dark)}
+.f-neuron{--fam-light:var(--neuron-light);--fam-medium:var(--neuron-medium);--fam-primary:var(--neuron-primary);--fam-dark:var(--neuron-dark)}
+.f-glia{--fam-light:var(--glia-light);--fam-medium:var(--glia-medium);--fam-primary:var(--glia-primary);--fam-dark:var(--glia-dark)}
+.f-retina{--fam-light:var(--retina-light);--fam-medium:var(--retina-medium);--fam-primary:var(--retina-primary);--fam-dark:var(--retina-dark)}
+.f-nexo{--fam-light:var(--nexo-light);--fam-medium:var(--nexo-medium);--fam-primary:var(--nexo-primary);--fam-dark:var(--nexo-dark)}
+.f-dendrito{--fam-light:var(--dendrito-light);--fam-medium:var(--dendrito-medium);--fam-primary:var(--dendrito-primary);--fam-dark:var(--dendrito-dark)}
+.f-lumen{--fam-light:var(--lumen-light);--fam-medium:var(--lumen-medium);--fam-primary:var(--lumen-primary);--fam-dark:var(--lumen-dark)}
+.f-ritmo{--fam-light:var(--ritmo-light);--fam-medium:var(--ritmo-medium);--fam-primary:var(--ritmo-primary);--fam-dark:var(--ritmo-dark)}
+.f-impulso{--fam-light:var(--impulso-light);--fam-medium:var(--impulso-medium);--fam-primary:var(--impulso-primary);--fam-dark:var(--impulso-dark)}
+.f-plexo{--fam-light:var(--plexo-light);--fam-medium:var(--plexo-medium);--fam-primary:var(--plexo-primary);--fam-dark:var(--plexo-dark)}
+.f-iris{--fam-light:var(--iris-light);--fam-medium:var(--iris-medium);--fam-primary:var(--iris-primary);--fam-dark:var(--iris-dark)}
+.f-nenhuma{--fam-light:var(--pia-light);--fam-medium:var(--pia-medium);--fam-primary:var(--pia-primary);--fam-dark:var(--pia-dark)}
+
+/* ============ VIDRO ============ */
+/* Superfície de vidro sobre o fundo: preenchimento claro mínimo, borda
+   de 1px e o desfoque do manual. A luz atrás (.luz) é Axon e Cortex. */
+.vidro{position:relative;border:1px solid rgba(var(--ink-rgb),.1);border-radius:var(--r-xl);
+  background:linear-gradient(180deg,rgba(var(--tom),.06),rgba(var(--tom),.018));
+  -webkit-backdrop-filter:var(--blur-glass);backdrop-filter:var(--blur-glass);
+  box-shadow:inset 0 1px 0 rgba(var(--ink-rgb),.06)}
+.luz{position:absolute;z-index:-1;border-radius:50%;pointer-events:none;filter:blur(90px);opacity:.38;
+  background:radial-gradient(circle,var(--axon) 0%,transparent 68%)}
+.luz.c{background:radial-gradient(circle,var(--cortex-medium) 0%,transparent 66%);opacity:.08}
+.st{font-family:var(--fd);font-weight:600;font-size:10px;letter-spacing:var(--tr-label);text-transform:uppercase;
+  color:var(--muted);border:1px solid var(--line2);border-radius:var(--r-tag);padding:3px 8px;white-space:nowrap}
+
+/* ============ PROJECTS: O ÍNDICE ============ */
+.pj-filtro{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;border-radius:var(--r-md);margin-bottom:26px}
+.pj-filtro button{height:36px;padding:0 15px;border-radius:10px;font-family:var(--fd);font-weight:600;font-size:12.5px;
+  color:var(--muted);transition:background var(--t-fast),color var(--t-fast)}
+.pj-filtro button:hover{color:var(--ink);background:rgba(var(--tom),.05)}
+.pj-filtro button.on{background:rgba(var(--tom),.09);color:var(--ink)}
+.pj-filtro button:focus-visible,.pj-chips button:focus-visible{outline:2px solid var(--foco);outline-offset:2px}
+.pj-grade{display:grid;grid-template-columns:repeat(12,1fr);gap:18px;position:relative}
+.pj-card{grid-column:span 4;display:flex;flex-direction:column;overflow:hidden;
+  transition:transform .45s var(--ease),border-color .25s}
+.pj-card.g8{grid-column:span 8}
+.pj-card.g6{grid-column:span 6}
+.pj-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--fam-medium) 55%,transparent)}
+.pj-card:focus-visible{outline:2px solid var(--foco);outline-offset:3px}
+.pj-img{position:relative;aspect-ratio:16/9;overflow:hidden;background:var(--void);border-bottom:1px solid var(--line);flex:1 0 auto}
+.pj-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform 1.1s var(--ease)}
+.pj-card:hover .pj-img img{transform:scale(1.04)}
+.pj-img .ph{position:absolute;inset:0;aspect-ratio:auto;border:0;border-radius:0}
+.pj-bd{padding:22px 24px 24px;display:flex;flex-direction:column;gap:10px;flex:1}
+.pj-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pj-meta .no{font-family:var(--fm);font-size:11.5px;letter-spacing:.08em;color:var(--fam-medium)}
+.pj-sq{width:8px;height:8px;background:var(--fam-primary);flex-shrink:0}
+.pj-card h3{font-size:clamp(28px,2.8vw,38px);font-weight:600;letter-spacing:-.025em;line-height:1}
+.pj-card .tl{font-family:var(--fd);font-size:16.5px;font-weight:500;line-height:1.35;letter-spacing:-.005em}
+.pj-card .rs{font-size:13.5px;color:var(--muted);line-height:1.55}
+.pj-card .go{margin-top:auto;padding-top:8px;font-family:var(--fd);font-weight:600;font-size:11px;letter-spacing:var(--tr-label);
+  text-transform:uppercase;color:var(--dim);display:inline-flex;align-items:center;gap:8px;transition:color .15s}
+.pj-card:hover .go{color:var(--fam-medium)}
+.pj-vazio{grid-column:1/-1;color:var(--muted);padding:30px 0}
+@media (max-width:980px){.pj-card,.pj-card.g8,.pj-card.g6{grid-column:span 6}}
+@media (max-width:680px){.pj-card,.pj-card.g8,.pj-card.g6{grid-column:span 12}}
+
+/* ============ PROJECTS: A PÁGINA DE CADA UM ============ */
+.pj-pg{padding-top:clamp(130px,17vh,170px);position:relative}
+.pj-voltar{display:inline-flex;align-items:center;gap:9px;font-family:var(--fd);font-weight:600;font-size:11px;
+  letter-spacing:var(--tr-label);text-transform:uppercase;color:var(--muted);transition:color .15s;min-height:44px}
+.pj-voltar:hover{color:var(--ink)}
+.pj-voltar svg{width:14px;height:14px;transform:scaleX(-1)}
+.pj-hero{position:relative}
+.pj-hero .pj-meta{margin-top:18px}
+.pj-hero h1{font-size:clamp(64px,13vw,184px);font-weight:600;letter-spacing:-.05em;line-height:.88;margin:18px 0 26px;
+  text-wrap:balance}
+.pj-hero .tl{font-family:var(--fd);font-size:clamp(23px,3.2vw,40px);font-weight:500;letter-spacing:-.02em;line-height:1.12;
+  max-width:880px;text-wrap:balance}
+.pj-hero .rs{color:var(--muted);font-size:clamp(15.5px,1.6vw,18px);max-width:660px;margin-top:18px}
+.pj-ficha{display:flex;flex-wrap:wrap;gap:18px 44px;margin-top:36px;padding-top:22px;border-top:1px solid var(--line)}
+.pj-ficha > div{display:flex;flex-direction:column;gap:7px;min-width:0}
+.pj-ficha .k{font-family:var(--fd);font-weight:600;font-size:10.5px;letter-spacing:var(--tr-label);text-transform:uppercase;color:var(--dim)}
+.pj-ficha .v{font-size:14px;color:var(--ink)}
+.pj-parc{display:flex;flex-wrap:wrap;align-items:center;gap:10px 30px}
+.pj-parc img{height:58px;width:auto;opacity:.8;filter:grayscale(1);margin:-14px -8px}
+.pj-parc span{font-family:var(--fd);font-weight:600;font-size:14px;color:var(--ink)}
+.pj-palco{margin:clamp(34px,6vh,60px) 0 clamp(90px,12vh,150px);padding:8px;border-radius:30px;position:relative}
+.pj-tela{position:relative;border-radius:22px;overflow:hidden;background:var(--void) center/cover no-repeat;aspect-ratio:16/9}
+.pj-tela.medida{aspect-ratio:auto}
+.pj-tela iframe{display:block;width:100%;height:100%;border:0;opacity:0;transition:opacity .6s ease}
+.pj-tela.medida iframe{height:var(--alt)}
+.pj-tela iframe.pronta{opacity:1}
+.pj-tela .ph{position:absolute;inset:0;aspect-ratio:auto;border:0;border-radius:0}
+@media (max-width:760px){.pj-tela{aspect-ratio:4/5}}
+
+.pj-porque .big{font-family:var(--fd);font-size:clamp(22px,3vw,34px);font-weight:500;line-height:1.36;letter-spacing:-.014em;max-width:900px}
+.pj-porque .after{color:var(--muted);max-width:660px;margin-top:22px;font-size:16px}
+
+.pj-nums{display:grid;gap:16px;grid-template-columns:repeat(3,1fr);position:relative}
+.pj-nums.c1{grid-template-columns:1fr}
+.pj-nums.c2,.pj-nums.c4{grid-template-columns:repeat(2,1fr)}
+.pj-num{padding:clamp(24px,3vw,36px);display:flex;flex-direction:column;gap:16px;min-height:270px;container-type:inline-size}
+.pj-nums.c1 .pj-num{min-height:0}
+.pj-num .pre{font-family:var(--fd);font-weight:600;font-size:11px;letter-spacing:var(--tr-label);text-transform:uppercase;color:var(--muted)}
+.pj-num .n{font-family:var(--fd);font-weight:300;font-size:clamp(46px,19cqi,112px);letter-spacing:-.045em;line-height:.92;white-space:nowrap;
+  color:var(--ink);font-variant-numeric:tabular-nums}
+.pj-num .n .u{font-size:.4em;font-weight:400;letter-spacing:-.01em;color:var(--fam-medium)}
+.pj-num .rot{font-size:15.5px;line-height:1.5;max-width:40ch}
+.pj-num .src{margin-top:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);line-height:1.4}
+.pj-num .src a{text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:3px}
+.pj-num .src a:hover{color:var(--ink);text-decoration-color:var(--dim)}
+.pj-num .src svg{width:11px;height:11px;vertical-align:-1px}
+@media (max-width:900px){.pj-nums,.pj-nums.c2,.pj-nums.c4{grid-template-columns:1fr}.pj-num{min-height:0}}
+
+.pj-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:22px}
+.pj-chips button{height:30px;padding:0 12px;border-radius:var(--r-chip);border:1px solid var(--line2);font-size:12.5px;
+  color:var(--muted);transition:background var(--t-fast),color var(--t-fast)}
+.pj-chips button:hover{color:var(--ink);background:rgba(var(--tom),.05)}
+.pj-chips button.on{background:rgba(var(--tom),.09);color:var(--ink);font-weight:600}
+.pj-chips .n{font-family:var(--fm);font-size:11px;margin-left:6px;color:var(--dim)}
+.pj-lista{padding:6px 26px;border-radius:var(--r-xl)}
+.pj-item{display:grid;grid-template-columns:140px 1fr auto;gap:6px 28px;padding:22px 0;border-top:1px solid var(--line);align-items:start}
+.pj-item:first-child{border-top:0}
+.pj-item .dt{font-family:var(--fm);font-size:12px;color:var(--muted);padding-top:3px}
+.pj-item .dt img{height:46px;width:auto;opacity:.8;filter:grayscale(1);margin:-12px 0 0 -8px}
+.pj-item .tx{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pj-item .tp{font-family:var(--fd);font-weight:600;font-size:10.5px;letter-spacing:var(--tr-label);text-transform:uppercase;color:var(--fam-medium)}
+.pj-item h3{font-size:18px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.pj-item .vc{font-size:13.5px;color:var(--muted)}
+.pj-item .nt{font-size:14px;color:var(--muted)}
+.pj-item .fim{display:flex;align-items:center;gap:10px;padding-top:2px}
+.pj-item .lk{width:36px;height:36px;border-radius:var(--r-sm);display:inline-flex;align-items:center;justify-content:center;
+  background:var(--veil);color:var(--muted);transition:color var(--t-fast),background var(--t-fast)}
+.pj-item .lk:hover{color:var(--ink);background:rgba(var(--tom),.11)}
+.pj-item .lk svg{width:14px;height:14px}
+.pj-semnada{padding:26px 0;display:flex;flex-direction:column;gap:16px;align-items:flex-start;color:var(--muted);max-width:560px}
+@media (max-width:760px){
+  .pj-lista{padding:4px 18px}
+  .pj-item{grid-template-columns:1fr auto}
+  .pj-item .dt{grid-column:1/-1}
 }
-.case .meta{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
-.case .meta .no{font-family:var(--fm);font-size:12px;letter-spacing:.12em;color:var(--syn)}
-.case .meta .st{font-family:var(--fd);font-weight:600;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--muted);border:1px solid var(--line2);border-radius:3px;padding:3px 8px}
-.case h2{font-size:clamp(30px,4.4vw,52px);font-weight:600;letter-spacing:-.02em;line-height:1.02;margin-bottom:10px}
-.case .tg{font-family:var(--fd);font-size:16px;font-weight:500;color:var(--ion);margin-bottom:16px}
-.case .ds{font-size:15px;color:var(--muted);max-width:560px}
-.case .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
-.case .tags span{font-family:var(--fd);font-weight:600;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--muted);border:1px solid var(--line);border-radius:var(--r-chip);padding:5px 12px}
+
+.pj-prox{display:grid;grid-template-columns:1fr 1.1fr;overflow:hidden;transition:transform .45s var(--ease),border-color .25s}
+.pj-prox:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--fam-medium) 55%,transparent)}
+.pj-prox .tx{padding:clamp(26px,4vw,48px);display:flex;flex-direction:column;gap:12px;justify-content:center}
+.pj-prox .k{font-family:var(--fd);font-weight:600;font-size:11px;letter-spacing:var(--tr-label);text-transform:uppercase;color:var(--dim)}
+.pj-prox h2{font-size:clamp(44px,7vw,92px);font-weight:600;letter-spacing:-.045em;line-height:.92}
+.pj-prox .tl{font-family:var(--fd);font-size:17px;font-weight:500;color:var(--muted);max-width:42ch}
+.pj-prox .pj-img{aspect-ratio:auto;min-height:260px;border-bottom:0;border-left:1px solid var(--line)}
+@media (max-width:760px){.pj-prox{grid-template-columns:1fr}.pj-prox .pj-img{min-height:0;aspect-ratio:16/9;border-left:0;border-top:1px solid var(--line)}}
+.pj-msg{color:var(--muted);padding:40px 0}
+
+/* banda de família (neuro.css): fundo Sulco, brilho e rótulo da família,
+   botão na mesma família, nunca ao lado de Synapse */
+.band.fam{background:var(--sulco-primary);border-color:color-mix(in srgb,var(--fam-primary) 22%,transparent)}
+.band.fam::before{content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(var(--tom),.035) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--tom),.035) 1px,transparent 1px);
+  background-size:28px 28px;-webkit-mask-image:linear-gradient(90deg,transparent 35%,black);mask-image:linear-gradient(90deg,transparent 35%,black)}
+.band.fam::after{right:-12%;top:auto;bottom:-60%;width:70%;height:auto;aspect-ratio:1;filter:blur(40px);
+  background:radial-gradient(circle,color-mix(in srgb,var(--fam-primary) 38%,transparent),transparent 68%)}
+.band.fam > *{position:relative;z-index:1}
+.band.fam p{color:var(--muted);max-width:480px;line-height:1.5}
+.band.fam .eyebrow{color:var(--fam-medium)}
+.band.fam .eyebrow::before{background:var(--fam-primary)}
+.band.fam .band-ic{position:absolute;z-index:0;right:-6%;top:50%;transform:translateY(-50%);width:clamp(220px,34vw,320px);
+  fill:none;stroke:var(--fam-medium);stroke-width:.7;stroke-linecap:round;stroke-linejoin:round;opacity:.06}
+.btn.fam{background:var(--fam-medium);color:var(--fam-dark)}
+.btn.fam:hover{background:var(--fam-light);transform:translateY(-1px)}
 
 /* ============ CONTACT ============ */
 .mailrow{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin:34px 0 10px}
@@ -550,7 +692,8 @@ let PRESS_ON = PRESS_VIDEOS.length > 0 || PRESS_ARTICLES.length > 0;
 /* ============================================================
    TEXTS — every language of the site in one place. To change a
    word on any page, change it here (and nowhere else). Project
-   content lives in the database and is edited at ./admin.html.
+   content lives in the database and is edited in SOMA, under
+   Administração, Site institucional (see FALLBACK_PROJECTS).
 
    "{n}" in a string is replaced by the number of published
    projects, spelled out in that language (see "nums").
@@ -634,10 +777,34 @@ en:{ label:'EN', htmlLang:'en',
   },
   projects:{
     eyebrow:'The portfolio', h1:'Projects',
-    lead:'{n} active fronts, one direction: technology that helps people. The names are internal codenames; the work behind them ranges from early research to systems approaching the field.',
+    lead:'{n} projects, from literature review to clinical testing. The names are internal codenames; each page shows what the project does, the numbers behind it and what it has produced.',
+    filtros:{ todos:'All', ativos:'In progress', concluidos:'Completed', conceito:'Concept' },
+    vazio:'No project in this phase yet.',
     band:{ eyebrow:'Collaboration', h2:'Want the detail behind a codename?',
       p:'Each project is documented as it matures. For collaboration, or detail beyond what is published here, get in touch.', btn:'Contact us' }
   },
+  pj:{ voltar:'All projects', fase:'Phase', area:'Field', parceiros:'In partnership with',
+    porque:'Why it exists',
+    numeros:{ lb:'In numbers', h2:'The numbers behind the project.',
+      sub:'Every number carries its source. Literature figures size the problem and what has already been studied; project figures describe what we are building.',
+      lit:'Literature', proj:'Project' },
+    saidas:{ lb:'Outputs', h2:'What the project has produced.', sub:'Articles, presentations, studies and partnerships, as they happen.',
+      todos:'All', vazio:'Nothing published yet. Articles, studies and partnerships from this project appear here as they come out.',
+      vazioAcao:'Get the newsletter', abrir:'Open' },
+    prox:'Next project',
+    band:{ eyebrow:'Collaboration', h2:'Talk to the project team.',
+      p:'Researchers, hospitals and institutions who want to test, fund or take this work further.', btn:'Write to the team',
+      assunto:'Project {n}' },
+    anim:'Animation: {n}', naoAchou:'We could not find this project.', carregando:'Loading project',
+    tipos:{ artigo:'Article', apresentacao:'Presentation', estudo:'Study', parceria:'Partnership', premio:'Award', patente:'Patent', software:'Software' },
+    tiposPl:{ artigo:'Articles', apresentacao:'Presentations', estudo:'Studies', parceria:'Partnerships', premio:'Awards', patente:'Patents', software:'Software' },
+    sit:{ planejado:'Planned', em_andamento:'In progress', submetido:'Submitted', aceito:'Accepted', publicado:'Published', apresentado:'Presented', concluido:'Completed' },
+    sitParc:{ planejado:'Planned', em_andamento:'Active', concluido:'Concluded' },
+    pre:{ mais_de:'Over', ate:'Up to', cerca_de:'About' }, a:' to ',
+    uni:{ '%':['%','%'], pp:[' pp',' pp'], h:[' h',' h'], dias:[' day',' days'], semanas:[' week',' weeks'], meses:[' month',' months'],
+          min:[' min',' min'], s:[' s',' s'], ms:[' ms',' ms'], mA:[' mA',' mA'], Hz:[' Hz',' Hz'], x:['×','×'],
+          mil:[' thousand',' thousand'], milhoes:[' million',' million'], ano:['',''] },
+    plural:v => v !== 1 },
   contact:{
     eyebrow:'Contact', h1:'Let\'s talk.',
     lead:'One address reaches the whole initiative. Tell us who you are and what you\'re working on, we read everything.',
@@ -663,6 +830,7 @@ pt:{ label:'PT', htmlLang:'pt-BR',
            contact:'Contato | NeuroDynamics' },
   desc:'A NeuroDynamics é uma iniciativa sem fins lucrativos de pesquisa e desenvolvimento em tecnologia para a saúde, na Escola de Engenharia da Universidade Federal de Minas Gerais (UFMG). Software, firmware, sistemas embarcados e IA a serviço da saúde humana.',
   nums:['zero','uma','duas','três','quatro','cinco','seis','sete','oito','nove','dez','onze','doze'],
+  numsM:['zero','um','dois','três','quatro','cinco','seis','sete','oito','nove','dez','onze','doze'],
   nav:{ home:'Início', about:'Quem somos', projects:'Projetos', contact:'Contato' },
   cta:'Fale conosco',
   menu:{ place:'Escola de Engenharia, UFMG', city:'Belo Horizonte, Brasil' },
@@ -730,10 +898,34 @@ pt:{ label:'PT', htmlLang:'pt-BR',
   },
   projects:{
     eyebrow:'O portfólio', h1:'Projetos',
-    lead:'{n} frentes ativas, uma direção: tecnologia que ajuda pessoas. Os nomes são internos; o trabalho por trás deles vai da pesquisa inicial a sistemas que se aproximam do campo.',
+    lead:'{n} projetos, da revisão da literatura ao teste clínico. Os nomes são internos; cada página mostra o que o projeto faz, os números que o justificam e o que ele já produziu.',
+    filtros:{ todos:'Todos', ativos:'Em andamento', concluidos:'Concluídos', conceito:'Conceito' },
+    vazio:'Nenhum projeto nesta fase ainda.',
     band:{ eyebrow:'Colaboração', h2:'Quer o detalhe por trás de um nome?',
       p:'Cada projeto é documentado conforme amadurece. Para colaborar, ou para detalhes além do que está publicado aqui, fale com a gente.', btn:'Fale conosco' }
   },
+  pj:{ voltar:'Todos os projetos', fase:'Fase', area:'Área', parceiros:'Em parceria com',
+    porque:'Por que existe',
+    numeros:{ lb:'Em números', h2:'Os números por trás do projeto.',
+      sub:'Cada número traz a fonte. Os da literatura medem o problema e o que já foi estudado; os do projeto descrevem o que estamos construindo.',
+      lit:'Literatura', proj:'Do projeto' },
+    saidas:{ lb:'Produção', h2:'O que o projeto já produziu.', sub:'Artigos, apresentações, estudos e parcerias, conforme acontecem.',
+      todos:'Tudo', vazio:'Nada publicado ainda. Artigos, estudos e parcerias deste projeto aparecem aqui conforme saem.',
+      vazioAcao:'Receber a newsletter', abrir:'Abrir' },
+    prox:'Próximo projeto',
+    band:{ eyebrow:'Colaboração', h2:'Fale com a equipe do projeto.',
+      p:'Pesquisadores, hospitais e instituições que queiram testar, financiar ou levar este trabalho adiante.', btn:'Escrever para a equipe',
+      assunto:'Projeto {n}' },
+    anim:'Animação: {n}', naoAchou:'Não encontramos este projeto.', carregando:'Carregando o projeto',
+    tipos:{ artigo:'Artigo', apresentacao:'Apresentação', estudo:'Estudo', parceria:'Parceria', premio:'Prêmio', patente:'Patente', software:'Software' },
+    tiposPl:{ artigo:'Artigos', apresentacao:'Apresentações', estudo:'Estudos', parceria:'Parcerias', premio:'Prêmios', patente:'Patentes', software:'Software' },
+    sit:{ planejado:'Planejado', em_andamento:'Em andamento', submetido:'Submetido', aceito:'Aceito', publicado:'Publicado', apresentado:'Apresentado', concluido:'Concluído' },
+    sitParc:{ planejado:'Prevista', em_andamento:'Ativa', concluido:'Encerrada' },
+    pre:{ mais_de:'Mais de', ate:'Até', cerca_de:'Cerca de' }, a:' a ',
+    uni:{ '%':['%','%'], pp:[' p.p.',' p.p.'], h:[' h',' h'], dias:[' dia',' dias'], semanas:[' semana',' semanas'], meses:[' mês',' meses'],
+          min:[' min',' min'], s:[' s',' s'], ms:[' ms',' ms'], mA:[' mA',' mA'], Hz:[' Hz',' Hz'], x:['×','×'],
+          mil:[' mil',' mil'], milhoes:[' milhão',' milhões'], ano:['',''] },
+    plural:v => Math.abs(v) >= 2 },
   contact:{
     eyebrow:'Contato', h1:'Vamos conversar.',
     lead:'Um endereço alcança a iniciativa inteira. Conte quem você é e no que está trabalhando: lemos tudo.',
@@ -749,11 +941,18 @@ pt:{ label:'PT', htmlLang:'pt-BR',
       ['Resposta','Em alguns dias','Somos engenheiros antes de tudo: espere uma resposta pensada, não instantânea.']]
   },
   status:{ 'In development':'Em desenvolvimento', 'Applied research':'Pesquisa aplicada',
-           'Prototype':'Protótipo', 'Field pilot':'Piloto em campo' },
+           'Prototype':'Protótipo', 'Field pilot':'Piloto em campo',
+           'In progress':'Em andamento', 'Completed':'Concluído', 'On hold':'Em pausa',
+           'Ready to start':'Pronto para iniciar', 'Concept':'Conceito' },
   tags:{ 'Embedded systems':'Sistemas embarcados', 'Firmware':'Firmware', 'AI':'IA',
          'Software':'Software', 'Clinical data':'Dados clínicos', 'Hardware':'Hardware',
          'Instrumentation':'Instrumentação', 'Signal processing':'Processamento de sinais',
-         'Wearables':'Vestíveis', 'Infrastructure':'Infraestrutura', 'Interoperability':'Interoperabilidade' }
+         'Wearables':'Vestíveis', 'Infrastructure':'Infraestrutura', 'Interoperability':'Interoperabilidade',
+         'Electrical stimulation':'Eletroestimulação', 'Critical care':'Terapia intensiva',
+         'Inertial sensing':'Sensoriamento inercial', 'Rehabilitation':'Reabilitação',
+         'Brain-computer interface':'Interface cérebro-máquina', 'Systematic review':'Revisão sistemática',
+         'Neuromodulation':'Neuromodulação', 'Accessibility':'Acessibilidade',
+         'Assistive technology':'Tecnologia assistiva', '3D scanning':'Digitalização 3D', 'Education':'Ensino' }
 },
 
 /* ---------------------------------------------------------- FR */
@@ -831,10 +1030,34 @@ fr:{ label:'FR', htmlLang:'fr',
   },
   projects:{
     eyebrow:'Le portfolio', h1:'Projets',
-    lead:'{n} fronts actifs, une direction : une technologie qui aide les personnes. Les noms sont des noms de code internes ; les travaux vont de la recherche initiale à des systèmes proches du terrain.',
+    lead:'{n} projets, de la revue de littérature aux essais cliniques. Les noms sont des noms de code internes ; chaque page montre ce que fait le projet, les chiffres qui le justifient et ce qu\'il a déjà produit.',
+    filtros:{ todos:'Tous', ativos:'En cours', concluidos:'Terminés', conceito:'Concept' },
+    vazio:'Aucun projet à cette étape pour l\'instant.',
     band:{ eyebrow:'Collaboration', h2:'Envie du détail derrière un nom de code ?',
       p:'Chaque projet est documenté à mesure qu\'il mûrit. Pour collaborer, ou pour aller au-delà de ce qui est publié ici, écrivez-nous.', btn:'Nous contacter' }
   },
+  pj:{ voltar:'Tous les projets', fase:'Étape', area:'Domaine', parceiros:'En partenariat avec',
+    porque:'Pourquoi il existe',
+    numeros:{ lb:'En chiffres', h2:'Les chiffres derrière le projet.',
+      sub:'Chaque chiffre indique sa source. Ceux de la littérature mesurent le problème et ce qui a déjà été étudié ; ceux du projet décrivent ce que nous construisons.',
+      lit:'Littérature', proj:'Projet' },
+    saidas:{ lb:'Production', h2:'Ce que le projet a déjà produit.', sub:'Articles, présentations, études et partenariats, au fil de l\'eau.',
+      todos:'Tout', vazio:'Rien de publié pour l\'instant. Les articles, études et partenariats de ce projet apparaîtront ici.',
+      vazioAcao:'Recevoir la newsletter', abrir:'Ouvrir' },
+    prox:'Projet suivant',
+    band:{ eyebrow:'Collaboration', h2:'Parlez à l\'équipe du projet.',
+      p:'Chercheurs, hôpitaux et institutions qui souhaitent tester, financer ou prolonger ce travail.', btn:'Écrire à l\'équipe',
+      assunto:'Projet {n}' },
+    anim:'Animation : {n}', naoAchou:'Projet introuvable.', carregando:'Chargement du projet',
+    tipos:{ artigo:'Article', apresentacao:'Présentation', estudo:'Étude', parceria:'Partenariat', premio:'Prix', patente:'Brevet', software:'Logiciel' },
+    tiposPl:{ artigo:'Articles', apresentacao:'Présentations', estudo:'Études', parceria:'Partenariats', premio:'Prix', patente:'Brevets', software:'Logiciels' },
+    sit:{ planejado:'Prévu', em_andamento:'En cours', submetido:'Soumis', aceito:'Accepté', publicado:'Publié', apresentado:'Présenté', concluido:'Terminé' },
+    sitParc:{ planejado:'Prévu', em_andamento:'Actif', concluido:'Terminé' },
+    pre:{ mais_de:'Plus de', ate:'Jusqu\'à', cerca_de:'Environ' }, a:' à ',
+    uni:{ '%':[' %',' %'], pp:[' pt',' pts'], h:[' h',' h'], dias:[' jour',' jours'], semanas:[' semaine',' semaines'], meses:[' mois',' mois'],
+          min:[' min',' min'], s:[' s',' s'], ms:[' ms',' ms'], mA:[' mA',' mA'], Hz:[' Hz',' Hz'], x:['×','×'],
+          mil:[' mille',' mille'], milhoes:[' million',' millions'], ano:['',''] },
+    plural:v => Math.abs(v) >= 2 },
   contact:{
     eyebrow:'Contact', h1:'Parlons-en.',
     lead:'Une seule adresse atteint toute l\'initiative. Dites-nous qui vous êtes et ce sur quoi vous travaillez : nous lisons tout.',
@@ -850,11 +1073,18 @@ fr:{ label:'FR', htmlLang:'fr',
       ['Réponse','Sous quelques jours','Nous sommes ingénieurs avant tout : attendez une réponse réfléchie plutôt qu\'immédiate.']]
   },
   status:{ 'In development':'En développement', 'Applied research':'Recherche appliquée',
-           'Prototype':'Prototype', 'Field pilot':'Pilote sur le terrain' },
+           'Prototype':'Prototype', 'Field pilot':'Pilote sur le terrain',
+           'In progress':'En cours', 'Completed':'Terminé', 'On hold':'En pause',
+           'Ready to start':'Prêt à démarrer', 'Concept':'Concept' },
   tags:{ 'Embedded systems':'Systèmes embarqués', 'Firmware':'Firmware', 'AI':'IA',
          'Software':'Logiciel', 'Clinical data':'Données cliniques', 'Hardware':'Matériel',
          'Instrumentation':'Instrumentation', 'Signal processing':'Traitement du signal',
-         'Wearables':'Wearables', 'Infrastructure':'Infrastructure', 'Interoperability':'Interopérabilité' }
+         'Wearables':'Wearables', 'Infrastructure':'Infrastructure', 'Interoperability':'Interopérabilité',
+         'Electrical stimulation':'Électrostimulation', 'Critical care':'Soins intensifs',
+         'Inertial sensing':'Capteurs inertiels', 'Rehabilitation':'Rééducation',
+         'Brain-computer interface':'Interface cerveau-machine', 'Systematic review':'Revue systématique',
+         'Neuromodulation':'Neuromodulation', 'Accessibility':'Accessibilité',
+         'Assistive technology':'Technologie d\'assistance', '3D scanning':'Numérisation 3D', 'Education':'Enseignement' }
 }
 };
 
@@ -909,72 +1139,383 @@ for (const k of Object.keys(NEWS_L)){
 }
 
 /* ============================================================
-   FALLBACK PROJECTS — the site reads projects from Supabase
-   (soma_v9 + soma_v13, edited at ./admin.html). If the database
-   is unreachable, this content keeps the site whole. Same shape
-   as the database rows: <field> is English, <field>_pt / _fr are
-   the translations.
+   FALLBACK PROJECTS: o site lê os projetos do banco do SOMA
+   (site_projetos_publico e site_projeto_publico, migração 2.21.0),
+   editados no portal, em Administração, Site institucional. Se o
+   banco não responder, este conteúdo mantém o site inteiro. É a
+   carga da 2.21.0 (planilha NRO-MKT-002), no mesmo formato das
+   linhas do banco: <campo> é o inglês, <campo>_pt e _fr as
+   traduções; numeros e saidas só vêm na página do projeto.
    ============================================================ */
 const FALLBACK_PROJECTS = [
-  { slug:'calima', nome:'Calima', status:'In development',
-    tags:['Embedded systems','Firmware','AI'],
-    tagline:'Monitoring that follows the patient',
-    resumo:'An intelligent monitoring platform that pairs embedded sensing with on-device intelligence, built to follow patients beyond the clinic.',
-    descricao:'Calima pairs embedded sensing with on-device intelligence to follow patients beyond the walls of the clinic. The project covers the full stack: sensor hardware, real-time firmware and the models that distill raw signal to information a clinician can trust.',
-    tagline_pt:'Monitoramento que acompanha o paciente',
-    resumo_pt:'Uma plataforma de monitoramento inteligente que une sensoriamento embarcado e inteligência no próprio dispositivo, feita para acompanhar o paciente além da clínica.',
-    descricao_pt:'A Calima une sensoriamento embarcado e inteligência no próprio dispositivo para acompanhar o paciente além das paredes da clínica. O projeto cobre a pilha inteira: o hardware dos sensores, o firmware de tempo real e os modelos que destilam o sinal bruto em informação na qual um profissional pode confiar.',
-    tagline_fr:'Un suivi qui accompagne le patient',
-    resumo_fr:'Une plateforme de surveillance intelligente qui associe capteurs embarqués et intelligence sur l\'appareil, conçue pour suivre le patient au-delà de la clinique.',
-    descricao_fr:'Calima associe capteurs embarqués et intelligence sur l\'appareil pour suivre le patient au-delà des murs de la clinique. Le projet couvre toute la chaîne : le matériel des capteurs, le firmware temps réel et les modèles qui distillent le signal brut en information digne de la confiance du clinicien.' },
-
-  { slug:'opalina', nome:'Opalina', status:'Applied research',
-    tags:['Software','Clinical data','AI'],
-    tagline:'Clinical data, made legible',
-    resumo:'A software platform that makes fragmented clinical data clear and usable for the teams who act on it.',
-    descricao:'Opalina is a software platform that makes fragmented clinical data clear and usable. It began as a research question about how care teams actually make decisions, and grew to explore what decision support should look like when it is designed around people, not dashboards.',
-    tagline_pt:'Dados clínicos, tornados legíveis',
-    resumo_pt:'Uma plataforma de software que torna dados clínicos fragmentados claros e utilizáveis para as equipes que agem sobre eles.',
-    descricao_pt:'A Opalina é uma plataforma de software que torna dados clínicos fragmentados claros e utilizáveis. Começou como uma pergunta de pesquisa sobre como as equipes de cuidado realmente decidem, e cresceu para explorar como deveria ser o apoio à decisão quando é desenhado em torno de pessoas, não de painéis.',
-    tagline_fr:'Les données cliniques, rendues lisibles',
-    resumo_fr:'Une plateforme logicielle qui rend les données cliniques fragmentées claires et exploitables pour les équipes qui agissent.',
-    descricao_fr:'Opalina est une plateforme logicielle qui rend claires et exploitables des données cliniques fragmentées. Née d\'une question de recherche sur la façon dont les équipes soignantes décident réellement, elle explore ce que devrait être l\'aide à la décision lorsqu\'elle est conçue autour des personnes, et non des tableaux de bord.' },
-
-  { slug:'orion', nome:'Órion', status:'Prototype',
-    tags:['Hardware','Instrumentation','Embedded systems'],
-    tagline:'Instrumentation without compromise',
-    resumo:'Instrumentation engineered for procedures where precision is non-negotiable: hardware, firmware and software designed as one.',
-    descricao:'Órion is instrumentation for procedures where precision is non-negotiable. Hardware, firmware and software are engineered as a single system, with every layer designed, simulated and tested in-house.',
-    tagline_pt:'Instrumentação sem concessões',
-    resumo_pt:'Instrumentação projetada para procedimentos em que a precisão não é negociável: hardware, firmware e software desenhados como um só.',
-    descricao_pt:'Órion é instrumentação para procedimentos em que a precisão não é negociável. Hardware, firmware e software são projetados como um único sistema, com cada camada desenhada, simulada e testada dentro de casa.',
-    tagline_fr:'L\'instrumentation sans compromis',
-    resumo_fr:'Une instrumentation conçue pour des gestes où la précision ne se négocie pas : matériel, firmware et logiciel pensés comme un tout.',
-    descricao_fr:'Órion est une instrumentation destinée aux gestes où la précision ne se négocie pas. Matériel, firmware et logiciel forment un seul système, chaque couche étant conçue, simulée et testée en interne.' },
-
-  { slug:'deriva', nome:'Deriva', status:'In development',
-    tags:['Signal processing','Wearables','AI'],
-    tagline:'Movement, measured',
-    resumo:'Technology that reads human movement and translates it to objective measures for rehabilitation and follow-up.',
-    descricao:'Deriva reads human movement and translates it to objective measures for rehabilitation and follow-up. Wearable sensing, signal processing and machine intelligence work together so that progress can be seen, not just felt.',
-    tagline_pt:'Movimento, medido',
-    resumo_pt:'Tecnologia que lê o movimento humano e o traduz em medidas objetivas para reabilitação e acompanhamento.',
-    descricao_pt:'A Deriva lê o movimento humano e o traduz em medidas objetivas para reabilitação e acompanhamento. Sensores vestíveis, processamento de sinais e inteligência de máquina trabalham juntos para que o progresso possa ser visto, e não apenas sentido.',
-    tagline_fr:'Le mouvement, mesuré',
-    resumo_fr:'Une technologie qui lit le mouvement humain et le traduit en mesures objectives pour la rééducation et le suivi.',
-    descricao_fr:'Deriva lit le mouvement humain et le traduit en mesures objectives pour la rééducation et le suivi. Capteurs portés, traitement du signal et intelligence artificielle travaillent ensemble pour que les progrès se voient, et ne soient pas seulement ressentis.' },
-
-  { slug:'nebula', nome:'Nebula', status:'Applied research',
-    tags:['Software','Infrastructure','Interoperability'],
-    tagline:'The connective layer',
-    resumo:'Secure infrastructure that lets devices, software and people speak the same language across our ecosystem.',
-    descricao:'Nebula is the connective layer of our ecosystem: the infrastructure that lets devices, software and people speak the same language. Quiet by design, it carries data securely between every project and wherever it needs to be.',
-    tagline_pt:'A camada que conecta',
-    resumo_pt:'Infraestrutura segura que faz dispositivos, software e pessoas falarem a mesma língua em todo o nosso ecossistema.',
-    descricao_pt:'A Nebula é a camada que conecta o nosso ecossistema: a infraestrutura que faz dispositivos, software e pessoas falarem a mesma língua. Discreta por projeto, ela leva os dados com segurança entre cada projeto e onde eles precisam chegar.',
-    tagline_fr:'La couche qui relie',
-    resumo_fr:'Une infrastructure sécurisée qui permet aux appareils, aux logiciels et aux personnes de parler la même langue dans tout notre écosystème.',
-    descricao_fr:'Nebula est la couche qui relie notre écosystème : l\'infrastructure qui permet aux appareils, aux logiciels et aux personnes de parler la même langue. Discrète par conception, elle transporte les données en toute sécurité entre chaque projet et leur destination.' }
+ {
+  "slug": "opalina",
+  "nome": "Opalina",
+  "status": "In progress",
+  "familia": "ion",
+  "animacao": "opalina",
+  "tags": [
+   "Electrical stimulation",
+   "Critical care",
+   "Embedded systems"
+  ],
+  "tagline": "Breathing is muscle work too.",
+  "tagline_pt": "Respirar também é músculo.",
+  "tagline_fr": "Respirer, c'est aussi un travail musculaire.",
+  "resumo": "Diaphragm stimulation synchronised with the mechanical ventilator, to preserve the breathing muscles of patients in intensive care and help them come off the ventilator.",
+  "resumo_pt": "Estimulação do diafragma sincronizada com o ventilador mecânico, para preservar a musculatura respiratória de pacientes na UTI e ajudar no desmame.",
+  "resumo_fr": "Une stimulation du diaphragme synchronisée avec le ventilateur mécanique, pour préserver les muscles respiratoires des patients en réanimation et faciliter le sevrage.",
+  "descricao": "After a long time on a ventilator, the diaphragm, the main breathing muscle, loses strength. Breathing without the machine again becomes slower and harder.\n\nOpalina reads the airflow from the ventilator and releases the stimulus, through the phrenic nerve, only while air flows in. Validation starts on the bench and moves on to the preclinical stage.",
+  "descricao_pt": "Quem passa muito tempo no ventilador perde força no diafragma, o principal músculo da respiração. Voltar a respirar sem o aparelho fica mais lento e mais difícil.\n\nA Opalina lê o fluxo de ar do ventilador e só libera o estímulo, pelo nervo frênico, enquanto o ar entra. A validação começa em bancada e segue para a fase pré-clínica.",
+  "descricao_fr": "Après un long séjour sous ventilateur, le diaphragme, principal muscle de la respiration, perd de sa force. Respirer de nouveau sans la machine devient plus lent et plus difficile.\n\nOpalina lit le débit d'air du ventilateur et ne délivre le stimulus, par le nerf phrénique, que pendant l'inspiration. La validation commence sur banc et se poursuit en phase préclinique.",
+  "numeros": [
+   {
+    "valor": 57,
+    "origem": "literatura",
+    "unidade": "%",
+    "fonte": "Levine et al., New England Journal of Medicine, 2008",
+    "fonte_url": "https://www.nejm.org/doi/full/10.1056/NEJMoa070447",
+    "rotulo": "less cross-sectional area in slow-twitch diaphragm fibres after 18 to 69 hours of mechanical ventilation",
+    "rotulo_pt": "menor área das fibras lentas do diafragma depois de 18 a 69 horas de ventilação mecânica",
+    "rotulo_fr": "de surface en moins pour les fibres lentes du diaphragme après 18 à 69 heures de ventilation mécanique"
+   },
+   {
+    "valor": 79,
+    "origem": "literatura",
+    "unidade": "%",
+    "fonte": "Demoule et al., Annals of Intensive Care, 2016",
+    "fonte_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4974210/",
+    "rotulo": "of patients on prolonged ventilation developed diaphragm dysfunction during their ICU stay",
+    "rotulo_pt": "dos pacientes em ventilação prolongada tiveram disfunção do diafragma durante a UTI",
+    "rotulo_fr": "des patients sous ventilation prolongée ont présenté une dysfonction du diaphragme en réanimation"
+   }
+  ],
+  "saidas": [
+   {
+    "tipo": "parceria",
+    "titulo": "Visuri",
+    "situacao": "em_andamento",
+    "imagem_url": "assets/visuri.png",
+    "nota": "Platforms and resources for development",
+    "nota_pt": "Plataformas e recursos para o desenvolvimento",
+    "nota_fr": "Plateformes et ressources pour le développement"
+   },
+   {
+    "tipo": "parceria",
+    "titulo": "InCor, Instituto do Coração do HC FMUSP",
+    "situacao": "em_andamento",
+    "imagem_url": "assets/incor.png",
+    "nota": "Facilities and clinical testing",
+    "nota_pt": "Estrutura e execução dos testes clínicos",
+    "nota_fr": "Infrastructure et essais cliniques"
+   }
+  ]
+ },
+ {
+  "slug": "orion",
+  "nome": "Órion",
+  "status": "Completed",
+  "familia": "retina",
+  "animacao": "orion",
+  "tags": [
+   "Electrical stimulation",
+   "Critical care",
+   "Inertial sensing"
+  ],
+  "tagline": "Exercise for patients under sedation.",
+  "tagline_pt": "Exercício para quem está sedado.",
+  "tagline_fr": "De l'exercice pour les patients sous sédation.",
+  "resumo": "Electrically stimulated cycling for sedated patients in intensive care. The leg muscles contract in time with a bedside cycle ergometer, with no voluntary effort.",
+  "resumo_pt": "Pedalada com eletroestimulação para pacientes sedados na UTI. Os músculos das pernas contraem no ritmo de um cicloergômetro de leito, sem esforço voluntário.",
+  "resumo_fr": "Un pédalage par électrostimulation pour les patients sédatés en réanimation. Les muscles des jambes se contractent au rythme d'un cycloergomètre de lit, sans effort volontaire.",
+  "descricao": "In intensive care, days without moving weaken the muscles. For someone under sedation, active exercise is not possible.\n\nÓrion connects Visuri's ReCARE® stimulator to inertial sensors on the legs, so stimulation follows each phase of the stroke in bed. The project was developed with IMREA HC FMUSP and Hospital São Luiz Jabaquara, responsible for clinical testing.",
+  "descricao_pt": "Na UTI, dias sem se mover enfraquecem os músculos. Para quem está sedado, o exercício ativo não é possível.\n\nO Órion liga o eletroestimulador ReCARE®, da Visuri, a sensores inerciais nas pernas, e a estimulação acompanha cada fase da pedalada no leito. O projeto foi desenvolvido com o IMREA HC FMUSP e o Hospital São Luiz Jabaquara, responsáveis pelos testes clínicos.",
+  "descricao_fr": "En réanimation, des jours sans bouger affaiblissent les muscles. Pour une personne sous sédation, l'exercice actif est impossible.\n\nÓrion relie le stimulateur ReCARE® de Visuri à des capteurs inertiels sur les jambes : la stimulation suit chaque phase du pédalage au lit. Le projet a été mené avec l'IMREA HC FMUSP et l'Hôpital São Luiz Jabaquara, chargés des essais cliniques.",
+  "numeros": [
+   {
+    "valor": 40,
+    "origem": "literatura",
+    "unidade": "%",
+    "fonte": "Appleton et al., Journal of the Intensive Care Society, 2015",
+    "fonte_url": "https://doi.org/10.1177/1751143714563016",
+    "rotulo": "of ICU patients studied developed ICU-acquired weakness",
+    "rotulo_pt": "dos pacientes de UTI estudados tiveram fraqueza adquirida na UTI",
+    "rotulo_fr": "des patients de réanimation étudiés ont développé une faiblesse acquise en réanimation"
+   },
+   {
+    "valor": 1.78,
+    "origem": "literatura",
+    "casas": 2,
+    "prefixo": "menos",
+    "unidade": "dias",
+    "fonte": "Pazo-Palacios et al., Annals of Physical and Rehabilitation Medicine, 2025",
+    "fonte_url": "https://www.sciencedirect.com/science/article/pii/S1877065725000181",
+    "rotulo": "in hospital, on average, when in-bed cycling is added to rehabilitation",
+    "rotulo_pt": "de internação hospitalar, em média, quando o cicloergômetro no leito se soma à reabilitação",
+    "rotulo_fr": "d'hospitalisation, en moyenne, lorsque le cycloergomètre au lit s'ajoute à la rééducation"
+   },
+   {
+    "valor": 0.93,
+    "origem": "literatura",
+    "casas": 2,
+    "prefixo": "menos",
+    "unidade": "dias",
+    "fonte": "Pazo-Palacios et al., Annals of Physical and Rehabilitation Medicine, 2025",
+    "fonte_url": "https://www.sciencedirect.com/science/article/pii/S1877065725000181",
+    "rotulo": "in intensive care in the same meta-analysis, with no significant difference in muscle strength or mortality",
+    "rotulo_pt": "na UTI, na mesma meta-análise, sem diferença significativa em força muscular ou mortalidade",
+    "rotulo_fr": "en réanimation dans la même méta-analyse, sans différence significative de force musculaire ni de mortalité"
+   }
+  ],
+  "saidas": [
+   {
+    "tipo": "parceria",
+    "titulo": "Visuri",
+    "situacao": "concluido",
+    "imagem_url": "assets/visuri.png",
+    "nota": "Platforms and resources for development",
+    "nota_pt": "Plataformas e recursos para o desenvolvimento",
+    "nota_fr": "Plateformes et ressources pour le développement"
+   },
+   {
+    "tipo": "parceria",
+    "titulo": "IMREA, Instituto de Medicina Física e Reabilitação do HC FMUSP",
+    "situacao": "concluido",
+    "imagem_url": "assets/imrea.png",
+    "nota": "Facilities and clinical testing",
+    "nota_pt": "Estrutura e execução dos testes clínicos",
+    "nota_fr": "Infrastructure et essais cliniques"
+   },
+   {
+    "tipo": "parceria",
+    "titulo": "Hospital São Luiz Jabaquara",
+    "situacao": "concluido",
+    "nota": "Facilities and clinical testing",
+    "nota_pt": "Estrutura e execução dos testes clínicos",
+    "nota_fr": "Infrastructure et essais cliniques"
+   }
+  ]
+ },
+ {
+  "slug": "calima",
+  "nome": "Calima",
+  "status": "In progress",
+  "familia": "ritmo",
+  "animacao": "calima",
+  "tags": [
+   "Electrical stimulation",
+   "Rehabilitation",
+   "Inertial sensing"
+  ],
+  "tagline": "Pedalling with your own muscles.",
+  "tagline_pt": "Pedalar com os próprios músculos.",
+  "tagline_fr": "Pédaler avec ses propres muscles.",
+  "resumo": "Electrical stimulation timed to the pedal stroke, for rehabilitation after stroke and incomplete spinal cord injury. A wireless sensor reads the pedal angle and decides when each muscle contracts.",
+  "resumo_pt": "Eletroestimulação sincronizada com a pedalada, para reabilitação depois de AVC e de lesão medular incompleta. Um sensor sem fio lê o ângulo do pedal e decide quando cada músculo contrai.",
+  "resumo_fr": "Une électrostimulation synchronisée avec le pédalage, pour la rééducation après un AVC et une lésion médullaire incomplète. Un capteur sans fil lit l'angle de la pédale et décide quand chaque muscle se contracte.",
+  "descricao": "After a stroke, the leg muscles can still contract, but the command that reaches them is weak. The goal is a contraction strong enough to matter to the body, such as keeping muscle mass and circulation.\n\nThe system pairs Visuri's Connect® stimulator with an inertial sensor on the pedal. Each muscle fires at the right phase of the stroke, on clinic or home cycle ergometers.",
+  "descricao_pt": "Depois de um AVC, os músculos das pernas continuam capazes de contrair, mas o comando que chega até eles fica fraco. A meta é uma contração forte o bastante para ter efeito no corpo, como manter a massa muscular e a circulação.\n\nO sistema une o eletroestimulador Connect®, da Visuri, a um sensor inercial no pedal. Cada músculo contrai na fase certa da pedalada, em cicloergômetros de clínica ou de casa.",
+  "descricao_fr": "Après un AVC, les muscles des jambes peuvent encore se contracter, mais la commande qui leur parvient est faible. L'objectif est une contraction assez forte pour agir sur le corps, comme préserver la masse musculaire et la circulation.\n\nLe système associe le stimulateur Connect® de Visuri à un capteur inertiel sur la pédale. Chaque muscle se contracte à la bonne phase du pédalage, sur des cycloergomètres en clinique ou à domicile.",
+  "numeros": [
+   {
+    "valor": 11.9,
+    "origem": "literatura",
+    "casas": 1,
+    "unidade": "milhoes",
+    "fonte": "World Stroke Organization, Global Stroke Fact Sheet 2025",
+    "fonte_url": "https://pubmed.ncbi.nlm.nih.gov/39635884/",
+    "rotulo": "new strokes worldwide in 2021",
+    "rotulo_pt": "de AVCs novos no mundo em 2021",
+    "rotulo_fr": "de nouveaux AVC dans le monde en 2021"
+   }
+  ],
+  "saidas": [
+   {
+    "tipo": "parceria",
+    "titulo": "Visuri",
+    "situacao": "em_andamento",
+    "imagem_url": "assets/visuri.png",
+    "nota": "Platforms and resources for development",
+    "nota_pt": "Plataformas e recursos para o desenvolvimento",
+    "nota_fr": "Plateformes et ressources pour le développement"
+   },
+   {
+    "tipo": "parceria",
+    "titulo": "Hospital Paulo de Tarso",
+    "situacao": "em_andamento",
+    "imagem_url": "assets/paulo.png",
+    "nota": "Facilities and follow-up of clinical testing",
+    "nota_pt": "Estrutura e acompanhamento dos testes clínicos",
+    "nota_fr": "Infrastructure et suivi des essais cliniques"
+   }
+  ]
+ },
+ {
+  "slug": "nebula",
+  "nome": "Nebula",
+  "status": "In progress",
+  "familia": "dendrito",
+  "animacao": "nebula",
+  "tags": [
+   "Brain-computer interface",
+   "EEG",
+   "Electrical stimulation"
+  ],
+  "tagline": "Think of the movement, and the muscle answers.",
+  "tagline_pt": "Pensar no movimento, e o músculo responde.",
+  "tagline_fr": "Penser au mouvement, et le muscle répond.",
+  "resumo": "A non-invasive brain-computer interface that detects movement intention in the EEG and triggers electrical stimulation at that same moment, for rehabilitation after spinal cord injury.",
+  "resumo_pt": "Uma interface cérebro-máquina não invasiva que detecta a intenção de movimento no EEG e aciona a eletroestimulação no mesmo instante, para reabilitação depois de lesão medular.",
+  "resumo_fr": "Une interface cerveau-machine non invasive qui détecte l'intention de mouvement dans l'EEG et déclenche l'électrostimulation au même instant, pour la rééducation après une lésion médullaire.",
+  "descricao": "After a spinal cord injury, the brain still plans the movement, but the signal does not reach the muscle.\n\nNebula reads the beta rhythm over the frontal cortex, which changes as a person prepares to move. The aim is to detect that intention sooner than motor imagery allows and close the loop with a contraction, to encourage neuroplasticity.",
+  "descricao_pt": "Depois de uma lesão medular, o cérebro continua planejando o movimento, mas o sinal não chega ao músculo.\n\nA Nebula lê o ritmo beta no córtex frontal, que muda quando a pessoa se prepara para se mover. A aposta é detectar essa intenção antes do que a imagética motora permite e fechar o ciclo com a contração, para estimular a neuroplasticidade.",
+  "descricao_fr": "Après une lésion médullaire, le cerveau planifie toujours le mouvement, mais le signal n'atteint pas le muscle.\n\nNebula lit le rythme bêta au niveau du cortex frontal, qui change lorsque la personne se prépare à bouger. L'objectif est de détecter cette intention plus tôt que ne le permet l'imagerie motrice et de boucler le cycle par une contraction, pour stimuler la neuroplasticité.",
+  "numeros": [
+   {
+    "valor": 15,
+    "origem": "literatura",
+    "prefixo": "mais_de",
+    "unidade": "milhoes",
+    "fonte": "World Health Organization, Spinal cord injury fact sheet",
+    "fonte_url": "https://www.who.int/news-room/fact-sheets/detail/spinal-cord-injury",
+    "rotulo": "people live with a spinal cord injury worldwide",
+    "rotulo_pt": "de pessoas vivem com lesão medular no mundo",
+    "rotulo_fr": "de personnes vivent avec une lésion médullaire dans le monde"
+   },
+   {
+    "valor": 13,
+    "origem": "projeto",
+    "valor_ate": 30,
+    "unidade": "Hz",
+    "rotulo": "the beta rhythm band the interface follows over the frontal cortex",
+    "rotulo_pt": "a faixa do ritmo beta que a interface acompanha no córtex frontal",
+    "rotulo_fr": "la bande du rythme bêta que l'interface suit au niveau du cortex frontal"
+   }
+  ],
+  "saidas": []
+ },
+ {
+  "slug": "gaia",
+  "nome": "Gaia",
+  "status": "In progress",
+  "familia": "neuron",
+  "animacao": "gaia",
+  "tags": [
+   "Systematic review",
+   "Electrical stimulation",
+   "Rehabilitation"
+  ],
+  "tagline": "What the evidence says about electrically stimulated cycling.",
+  "tagline_pt": "O que a evidência diz sobre pedalar com eletroestimulação.",
+  "tagline_fr": "Ce que disent les données sur le pédalage par électrostimulation.",
+  "resumo": "A systematic review of FES cycling: protocols, stimulation parameters and clinical outcomes, following the PRISMA guidelines.",
+  "resumo_pt": "Uma revisão sistemática sobre FES-cycling: protocolos, parâmetros de estimulação e desfechos clínicos, conforme as diretrizes PRISMA.",
+  "resumo_fr": "Une revue systématique du FES-cycling : protocoles, paramètres de stimulation et résultats cliniques, selon les recommandations PRISMA.",
+  "descricao": "FES cycling has been studied for decades, but each study applies the therapy differently and measures different outcomes. That makes it hard to tell what works, and for whom.\n\nGaia searches and appraises the published studies in the main databases of the field, such as PubMed, Embase and PEDro, with independent reviewers. The findings shape the protocols of Calima and Órion.",
+  "descricao_pt": "O FES-cycling é estudado há décadas, mas cada pesquisa aplica a terapia de um jeito e mede resultados diferentes. Fica difícil saber o que funciona, e para quem.\n\nA Gaia busca e avalia os estudos publicados nas principais bases da área, como PubMed, Embase e PEDro, com revisores independentes. O resultado orienta os protocolos da Calima e do Órion.",
+  "descricao_fr": "Le FES-cycling est étudié depuis des décennies, mais chaque étude applique la thérapie à sa manière et mesure des résultats différents. Difficile de savoir ce qui fonctionne, et pour qui.\n\nGaia recherche et évalue les études publiées dans les principales bases du domaine, comme PubMed, Embase et PEDro, avec des relecteurs indépendants. Les résultats orientent les protocoles de Calima et d'Órion.",
+  "numeros": [],
+  "saidas": []
+ },
+ {
+  "slug": "equio",
+  "nome": "Équio",
+  "status": "Ready to start",
+  "familia": "nexo",
+  "animacao": "equio",
+  "tags": [
+   "Neuromodulation",
+   "Firmware",
+   "Hardware"
+  ],
+  "tagline": "Neuromodulation on a device that already exists.",
+  "tagline_pt": "Neuromodulação em um aparelho que já existe.",
+  "tagline_fr": "La neuromodulation sur un appareil qui existe déjà.",
+  "resumo": "Transcranial direct current stimulation (tDCS) and galvanic vestibular stimulation (GVS) on Visuri's Connect® stimulator, to lower the cost of access to these therapies.",
+  "resumo_pt": "Estimulação transcraniana por corrente contínua (tDCS) e estimulação vestibular galvânica (GVS) no eletroestimulador Connect®, da Visuri, para reduzir o custo de acesso a essas terapias.",
+  "resumo_fr": "La stimulation transcrânienne à courant continu (tDCS) et la stimulation vestibulaire galvanique (GVS) sur le stimulateur Connect® de Visuri, pour réduire le coût d'accès à ces thérapies.",
+  "descricao": "tDCS, with electrodes on the head, is studied in depression, chronic pain and stroke rehabilitation. GVS, applied behind the ears, acts on balance. Both kinds of equipment remain expensive and hard to find.\n\nÉquio adapts the hardware and firmware of a platform already used in rehabilitation to deliver stable direct current, with ramps, impedance monitoring and safety limits.",
+  "descricao_pt": "A tDCS, com eletrodos sobre a cabeça, é estudada em depressão, dor crônica e reabilitação depois de AVC. A GVS, aplicada atrás das orelhas, atua no equilíbrio. Os dois equipamentos ainda são caros e pouco disponíveis.\n\nO Équio adapta o hardware e o firmware de uma plataforma já usada em reabilitação para gerar corrente contínua estável, com rampas, monitoramento de impedância e limites de segurança.",
+  "descricao_fr": "La tDCS, avec des électrodes sur la tête, est étudiée dans la dépression, la douleur chronique et la rééducation après un AVC. La GVS, appliquée derrière les oreilles, agit sur l'équilibre. Les deux équipements restent chers et peu disponibles.\n\nÉquio adapte le matériel et le firmware d'une plateforme déjà utilisée en rééducation pour produire un courant continu stable, avec rampes, surveillance de l'impédance et limites de sécurité.",
+  "numeros": [
+   {
+    "valor": 2,
+    "origem": "projeto",
+    "prefixo": "ate",
+    "unidade": "mA",
+    "rotulo": "the typical tDCS current, delivered through electrodes on the head",
+    "rotulo_pt": "a corrente típica da tDCS, aplicada por eletrodos sobre a cabeça",
+    "rotulo_fr": "le courant typique de la tDCS, délivré par des électrodes sur la tête"
+   },
+   {
+    "valor": 2025,
+    "origem": "literatura",
+    "unidade": "ano",
+    "fonte": "Medical Economics, 2025",
+    "fonte_url": "https://www.medicaleconomics.com/view/flow-neuroscience-wins-first-fda-approval-for-at-home-brain-stimulation-depression-treatment",
+    "rotulo": "the FDA approves the first at-home tDCS device, for major depression",
+    "rotulo_pt": "a FDA aprova o primeiro aparelho de tDCS de uso em casa, para depressão maior",
+    "rotulo_fr": "la FDA autorise le premier appareil de tDCS à domicile, pour la dépression majeure"
+   }
+  ],
+  "saidas": [
+   {
+    "tipo": "parceria",
+    "titulo": "Visuri",
+    "situacao": "em_andamento",
+    "imagem_url": "assets/visuri.png",
+    "nota": "The Connect® platform and resources for development",
+    "nota_pt": "A plataforma Connect® e recursos para o desenvolvimento",
+    "nota_fr": "La plateforme Connect® et des ressources pour le développement"
+   }
+  ]
+ },
+ {
+  "slug": "zefiro",
+  "nome": "Zéfiro",
+  "status": "Concept",
+  "familia": "glia",
+  "animacao": "zefiro",
+  "tags": [
+   "Accessibility",
+   "Assistive technology",
+   "Embedded systems"
+  ],
+  "tagline": "The gaze that already speaks can also switch on the TV.",
+  "tagline_pt": "O olhar que já conversa também liga a TV.",
+  "tagline_fr": "Le regard qui parle déjà peut aussi allumer la télé.",
+  "resumo": "A module that learns the signals of the remote controls at home, and an accessible app, so that people who communicate with their eyes can control the devices around them.",
+  "resumo_pt": "Um módulo que aprende os sinais dos controles remotos da casa e um aplicativo acessível, para que pessoas que se comunicam pelo olhar controlem os aparelhos ao redor.",
+  "resumo_fr": "Un module qui apprend les signaux des télécommandes de la maison et une application accessible, pour que les personnes qui communiquent par le regard pilotent les appareils autour d'elles.",
+  "descricao": "People with ALS, high spinal cord injury or cerebral palsy already talk through a tablet, with their eyes or facial movements. Switching on the TV or adjusting the air conditioning still depends on someone else.\n\nZéfiro links a small infrared emitter to the tablet over Bluetooth and offers an interface built for eye tracking, scanning and switches.",
+  "descricao_pt": "Pessoas com ELA, lesão medular alta ou paralisia cerebral já conversam por um tablet, com o olhar ou com movimentos do rosto. Ligar a TV ou ajustar o ar-condicionado ainda depende de outra pessoa.\n\nO Zéfiro conecta um pequeno emissor de infravermelho ao tablet por Bluetooth e oferece uma interface feita para rastreamento ocular, varredura e acionadores.",
+  "descricao_fr": "Les personnes atteintes de SLA, de lésion médullaire haute ou de paralysie cérébrale conversent déjà grâce à une tablette, par le regard ou les mouvements du visage. Allumer la télé ou régler la climatisation dépend encore de quelqu'un d'autre.\n\nZéfiro relie un petit émetteur infrarouge à la tablette en Bluetooth et propose une interface conçue pour le suivi oculaire, le balayage et les contacteurs.",
+  "numeros": [],
+  "saidas": []
+ },
+ {
+  "slug": "aurora",
+  "nome": "Aurora",
+  "status": "Concept",
+  "familia": "iris",
+  "animacao": "aurora",
+  "tags": [
+   "3D scanning",
+   "Education",
+   "Software"
+  ],
+  "tagline": "The anatomy collection, open in 3D.",
+  "tagline_pt": "O acervo de anatomia, aberto em 3D.",
+  "tagline_fr": "La collection d'anatomie, ouverte en 3D.",
+  "resumo": "Three-dimensional digitisation of UFMG's collection of anatomical specimens, and a web platform to study each one in the browser or on a phone.",
+  "resumo_pt": "Digitalização tridimensional do acervo de peças anatômicas da UFMG e uma plataforma web para estudar cada peça pelo navegador ou pelo celular.",
+  "resumo_fr": "La numérisation en trois dimensions de la collection de pièces anatomiques de l'UFMG, et une plateforme web pour étudier chaque pièce dans le navigateur ou sur un téléphone.",
+  "descricao": "Anatomical specimens can only be studied inside the laboratory, during class hours, and they wear with handling.\n\nAurora photographs and scans each specimen to build a 3D model reviewed by faculty, with its structures labelled. The original collection is preserved, with respect for the people whose bodies form it.",
+  "descricao_pt": "As peças anatômicas só podem ser estudadas dentro do laboratório, no horário de aula, e se desgastam com o manuseio.\n\nA Aurora fotografa e escaneia cada peça para gerar um modelo 3D revisado por docentes, com as estruturas identificadas. O acervo original fica preservado, com respeito às pessoas cujos corpos o compõem.",
+  "descricao_fr": "Les pièces anatomiques ne peuvent être étudiées qu'au laboratoire, aux heures de cours, et elles s'usent à la manipulation.\n\nAurora photographie et numérise chaque pièce pour produire un modèle 3D relu par des enseignants, avec ses structures identifiées. La collection d'origine est préservée, dans le respect des personnes dont les corps la composent.",
+  "numeros": [],
+  "saidas": []
+ }
 ];
 
 /* how many project cards the home page keeps on phones — the rest sit
@@ -1005,11 +1546,6 @@ const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 /* "{n} fronts, one direction." -> "Five fronts, one direction." */
 const fillN = (s, n) => s.replace('{n}', cap(numWord(n)));
 
-/* project text in the active language, English as fallback */
-function px(p, field){
-  const suf = state.lang === 'en' ? '' : '_' + state.lang;
-  return p[field + suf] || p[field] || '';
-}
 const trStatus = s => T().status[s] || s || '';
 const trTag    = t => T().tags[t]   || t || '';
 
@@ -1045,6 +1581,81 @@ function ph(fig, name, cls=''){
 }
 
 const statusChip = s => `<span class="st">${esc(trStatus(s || 'In development'))}</span>`;
+
+/* ============================================================
+   PROJECTS: as páginas. Cada projeto tem uma família de cor
+   (FAMILIAS) e, quando existe, uma animação em anim/<nome>.html
+   com o pôster em anim/posters/<nome>.jpg. Animação fora desta
+   lista não é embutida: a página mostra a imagem ou o placeholder.
+   ============================================================ */
+const ANIMACOES = ['opalina','orion','calima','nebula','gaia','equio','zefiro','aurora'];
+const FAMILIAS = ['ion','neuron','glia','retina','nexo','dendrito','lumen','ritmo','impulso','plexo','iris'];
+const fam = p => 'f-' + (FAMILIAS.includes(p?.familia) ? p.familia : 'nenhuma');
+const temAnim = p => ANIMACOES.includes(p?.animacao);
+/* a imagem do cartão: a que o painel pôs, senão o pôster da animação */
+const imgProjeto = p => /^https:\/\//.test(p?.imagem_url || '') ? p.imagem_url
+  : temAnim(p) ? `anim/posters/${p.animacao}.jpg` : '';
+/* texto do projeto no idioma ativo; sem tradução, o inglês, e sem ele o português */
+const pxx = (o, campo) => o[campo + (state.lang === 'en' ? '' : '_' + state.lang)] || o[campo] || o[campo + '_pt'] || '';
+const projLink = p => '#/projects/' + encodeURIComponent(p.slug);
+const projNo = (i, n) => `${String(i+1).padStart(2,'0')} / ${String(n).padStart(2,'0')}`;
+const numWordM = n => (T().numsM || T().nums)[n] || String(n);
+/* em que filtro do índice cada fase entra */
+const FASES = { concluidos:['Completed'], conceito:['Concept'], ativos:['In progress','Ready to start',
+  'In development','Applied research','Prototype','Field pilot'] };
+
+function imgBloco(p, i){
+  const u = imgProjeto(p);
+  return u ? `<img src="${esc(u)}" alt="" loading="lazy" decoding="async">`
+           : ph(String(i+1).padStart(2,'0'), p.nome);
+}
+
+/* 57% · mais de 15 milhões · −1,78 dia · 13 a 30 Hz · 2025 */
+function numeroTexto(n){
+  const t = T().pj, casas = Math.min(2, Math.max(0, +n.casas || 0));
+  const fmt = v => Number(v).toLocaleString(T().htmlLang, { minimumFractionDigits:casas, maximumFractionDigits:casas,
+    useGrouping: n.unidade !== 'ano' });
+  const v = Number(n.valor), ate = n.valor_ate != null && n.valor_ate !== '' ? Number(n.valor_ate) : null;
+  const sinal = n.prefixo === 'menos' ? '−' : n.prefixo === 'mais' ? '+' : '';
+  const u = t.uni[n.unidade] || ['',''];
+  const un = u[t.plural(ate ?? v) ? 1 : 0];
+  return { pre: t.pre[n.prefixo] || '', num: sinal + fmt(v) + (ate != null ? t.a + fmt(ate) : ''), un };
+}
+
+function numeroBloco(n){
+  const t = T().pj.numeros, x = numeroTexto(n), lit = n.origem !== 'projeto';
+  const fonte = !lit ? '' : n.fonte_url && /^https?:\/\//.test(n.fonte_url)
+    ? `<a href="${esc(n.fonte_url)}" target="_blank" rel="noopener">${esc(n.fonte)} ${IC.ne}</a>` : esc(n.fonte || '');
+  return `<div class="pj-num vidro reveal">
+    ${x.pre ? `<span class="pre">${esc(x.pre)}</span>` : ''}
+    <p class="n">${esc(x.num)}${x.un ? `<span class="u">${esc(x.un)}</span>` : ''}</p>
+    <p class="rot">${esc(pxx(n, 'rotulo'))}</p>
+    <p class="src"><span class="st">${esc(lit ? t.lit : t.proj)}</span>${fonte ? `<span>${fonte}</span>` : ''}</p>
+  </div>`;
+}
+
+const dataCurta = d => {
+  if (!d) return '';
+  const x = new Date(d + 'T12:00:00');
+  return isNaN(x) ? '' : x.toLocaleDateString(T().htmlLang, { month:'short', year:'numeric' });
+};
+function saidaBloco(s){
+  const t = T().pj, parc = s.tipo === 'parceria';
+  const sit = (parc ? t.sitParc[s.situacao] : null) || t.sit[s.situacao] || '';
+  const img = /^(https:\/\/|assets\/)/.test(s.imagem_url || '') ? s.imagem_url : '';
+  const lateral = parc && img ? `<img src="${esc(img)}" alt="">` : esc(dataCurta(s.data));
+  return `<div class="pj-item" data-tipo="${esc(s.tipo)}">
+    <span class="dt">${lateral}</span>
+    <div class="tx">
+      <span class="tp">${esc(t.tipos[s.tipo] || s.tipo)}</span>
+      <h3>${esc(s.titulo)}</h3>
+      ${s.veiculo ? `<span class="vc">${esc(s.veiculo)}</span>` : ''}
+      ${pxx(s, 'nota') ? `<p class="nt">${esc(pxx(s, 'nota'))}</p>` : ''}
+    </div>
+    <div class="fim">${sit ? `<span class="st">${esc(sit)}</span>` : ''}${s.url && /^https?:\/\//.test(s.url)
+      ? `<a class="lk" href="${esc(s.url)}" target="_blank" rel="noopener" aria-label="${esc(t.saidas.abrir)}: ${esc(s.titulo)}">${IC.ne}</a>` : ''}</div>
+  </div>`;
+}
 
 /* ============================================================
    PRESS CAROUSEL — markup + player. One clip is on stage at a
@@ -1339,9 +1950,11 @@ async function loadProjects(){
     if (!error && Array.isArray(data) && data.length){
       state.projects = data;
       state.loaded = true;
-      // re-render with fresh data, but only where projects are shown
+      // re-render with fresh data, but only where projects are shown;
+      // a project page only repaints its text, never the animation
       const r = route();
-      if (r === 'home' || r === 'projects') render(r);
+      if (r === 'projects' && rotaProjeto()){ if (projeto.dados) projetoPintar(); }
+      else if (r === 'home' || r === 'projects') render(r);
     }
   }catch(_){ /* fallback content stays */ }
 }
@@ -1374,11 +1987,11 @@ function pageHome(){
   const spans = ['w7','w5','w5','w7','',''];
   // beyond the third card, "xtra" hides the card on phones (see .pgrid rules)
   const cards = prj.map((p,i)=>`
-    <a class="pcard ${spans[i%spans.length]} ${i>=HOME_PROJECTS_MOBILE?'xtra':''} reveal" href="#/projects">
-      ${ph(String(i+1).padStart(2,'0'), p.nome)}
+    <a class="pcard vidro ${fam(p)} ${spans[i%spans.length]} ${i>=HOME_PROJECTS_MOBILE?'xtra':''} reveal" href="${projLink(p)}">
+      <div class="pj-img">${imgBloco(p, i)}</div>
       <div class="body">
         <div class="top"><h3>${esc(p.nome)}</h3>${statusChip(p.status)}</div>
-        <p class="tg">${esc(px(p,'resumo') || px(p,'tagline'))}</p>
+        <p class="tg">${esc(pxx(p,'tagline') || pxx(p,'resumo'))}</p>
         <span class="go">${esc(T().ui.view)} ${IC.ne}</span>
       </div>
     </a>`).join('');
@@ -1567,39 +2180,35 @@ function pageAbout(){
   </section>`;
 }
 
+/* #/projects é o índice; #/projects/<slug>, a página do projeto */
+function rotaProjeto(){
+  const seg = (location.hash || '').replace(/^#\/?/, '').split('?')[0].split('/');
+  if (seg[0] !== 'projects' || !seg[1]) return '';
+  try{ const s = decodeURIComponent(seg[1]); return SLUG_OK.test(s) ? s : '-'; }catch(_){ return '-'; }
+}
 function pageProjects(){
-  const t = T().projects, n = String(state.projects.length).padStart(2,'0');
-  const rows = state.projects.map((p,i)=>{
-    const tagline = px(p,'tagline'), texto = px(p,'descricao') || px(p,'resumo');
-    return `
-  <article class="case reveal">
-    <div>
-      <div class="meta">
-        <span class="no">${String(i+1).padStart(2,'0')} / ${n}</span>
-        ${statusChip(p.status)}
-      </div>
-      <h2>${esc(p.nome)}</h2>
-      ${tagline ? `<p class="tg">${esc(tagline)}</p>` : ''}
-      <p class="ds">${esc(texto)}</p>
-      ${Array.isArray(p.tags) && p.tags.length
-        ? `<div class="tags">${p.tags.map(x=>`<span>${esc(trTag(x))}</span>`).join('')}</div>` : ''}
-    </div>
-    <div class="case-media">
-      ${p.imagem_url
-        ? `<div class="ph tall"><img class="real" src="${esc(p.imagem_url)}" alt="${esc(p.nome)}"></div>`
-        : ph(String(i+1).padStart(2,'0'), p.nome, 'tall')}
-    </div>
-  </article>`;
-  }).join('');
+  const slug = rotaProjeto();
+  return slug ? pageProjeto(slug) : pageProjetosIndice();
+}
 
+/* ---------------- o índice ---------------- */
+const indice = { filtro:'todos' };
+function pageProjetosIndice(){
+  const t = T().projects;
   return `
   <div class="pg-head">
     <span class="eyebrow">${t.eyebrow}</span>
     <h1>${t.h1}</h1>
-    <p class="lead">${fillN(t.lead, state.projects.length)}</p>
+    <p class="lead">${esc(t.lead.replace('{n}', cap(numWordM(state.projects.length))))}</p>
   </div>
-  ${rows}
-  <section style="margin-top:clamp(60px,9vh,110px)">
+  <section style="position:relative">
+    <div class="luz" style="width:60vmax;height:60vmax;left:-20vmax;top:-10vmax"></div>
+    <div class="luz c" style="width:44vmax;height:44vmax;right:-14vmax;top:30%"></div>
+    <div class="pj-filtro vidro reveal" role="group" aria-label="${esc(t.h1)}">${Object.entries(t.filtros).map(([k, lb]) =>
+      `<button type="button" data-f="${k}" class="${indice.filtro === k ? 'on' : ''}" aria-pressed="${indice.filtro === k}">${esc(lb)}</button>`).join('')}</div>
+    <div class="pj-grade" id="pj-grade">${indiceCartoes()}</div>
+  </section>
+  <section>
     <div class="band reveal">
       <span class="eyebrow">${t.band.eyebrow}</span>
       <h2>${t.band.h2}</h2>
@@ -1608,6 +2217,250 @@ function pageProjects(){
     </div>
   </section>`;
 }
+function indiceCartoes(){
+  const todos = state.projects, f = indice.filtro;
+  const lista = f === 'todos' ? todos : todos.filter(p => (FASES[f] || []).includes(p.status));
+  if (!lista.length) return `<p class="pj-vazio">${esc(T().projects.vazio)}</p>`;
+  /* os dois primeiros abrem a grade em 8 + 4; o resto, de três em três */
+  return lista.map((p, i) => {
+    const g = i === 0 ? 'g8' : '';
+    return `<a class="pj-card vidro ${fam(p)} ${g} reveal" href="${projLink(p)}">
+      <div class="pj-img">${imgBloco(p, todos.indexOf(p))}</div>
+      <div class="pj-bd">
+        <div class="pj-meta"><span class="pj-sq"></span><span class="no">${projNo(todos.indexOf(p), todos.length)}</span>${statusChip(p.status)}</div>
+        <h3>${esc(p.nome)}</h3>
+        <p class="tl">${esc(pxx(p, 'tagline'))}</p>
+        ${i === 0 ? `<p class="rs">${esc(pxx(p, 'resumo'))}</p>` : ''}
+        <span class="go">${esc(T().ui.view)} ${IC.arrow}</span>
+      </div>
+    </a>`;
+  }).join('');
+}
+function indiceInit(){
+  document.querySelectorAll('.pj-filtro button').forEach(b => b.addEventListener('click', () => {
+    indice.filtro = b.dataset.f;
+    document.querySelectorAll('.pj-filtro button').forEach(x => {
+      x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
+    $('#pj-grade').innerHTML = indiceCartoes();
+    observe();
+  }));
+}
+
+/* ---------------- a página do projeto ----------------
+   Desenha na hora com o que já tem (a lista ou a reserva) e pede a
+   página inteira ao banco; quando ela chega, repinta o texto, os
+   números e a produção. O palco da animação nunca é redesenhado à
+   toa: trocar o iframe recomeça a cena. */
+const projeto = { slug:'', dados:null, vez:0, filtro:'todos', chave:'' };
+
+function projetoAtual(slug){
+  if (projeto.slug === slug && projeto.dados) return projeto.dados;
+  const daLista = state.projects.find(p => p.slug === slug);
+  const reserva = FALLBACK_PROJECTS.find(p => p.slug === slug);
+  if (!daLista) return state.loaded ? null : (reserva || null);
+  /* o banco respondeu à lista, mas a página ainda não: números e produção
+     da reserva só enquanto o texto for o mesmo */
+  return reserva && !state.loaded ? reserva : { ...daLista, numeros:null, saidas:null };
+}
+
+function pageProjeto(slug){
+  const t = T().pj, p = projetoAtual(slug);
+  const volta = `<a class="pj-voltar" href="#/projects">${IC.arrow} ${esc(t.voltar)}</a>`;
+  if (!p) return `<div class="pj-pg ${slug === '-' ? '' : 'carrega'}" id="pj-pg">${volta}
+    <p class="pj-msg" id="pj-msg">${esc(slug === '-' ? t.naoAchou : t.carregando)}</p></div>`;
+  return `<div class="pj-pg ${fam(p)}" id="pj-pg">
+    <div class="luz" style="width:64vmax;height:64vmax;left:-24vmax;top:-18vmax"></div>
+    ${volta}
+    <div class="pj-hero" id="pj-topo">${projetoTopo(p)}</div>
+    <div class="pj-palco vidro" id="pj-palco">${projetoPalco(p)}</div>
+    <div id="pj-corpo">${projetoCorpo(p)}</div>
+  </div>`;
+}
+
+function projetoTopo(p){
+  const t = T().pj, todos = state.projects, i = todos.findIndex(x => x.slug === p.slug);
+  const parc = (p.saidas || []).filter(s => s.tipo === 'parceria');
+  const tags = (p.tags || []).map(trTag).join(', ');
+  return `
+    <div class="pj-meta"><span class="pj-sq"></span>${i >= 0 ? `<span class="no">${projNo(i, todos.length)}</span>` : ''}${statusChip(p.status)}</div>
+    <h1>${esc(p.nome)}</h1>
+    ${pxx(p, 'tagline') ? `<p class="tl">${esc(pxx(p, 'tagline'))}</p>` : ''}
+    ${pxx(p, 'resumo') ? `<p class="rs">${esc(pxx(p, 'resumo'))}</p>` : ''}
+    <div class="pj-ficha">
+      <div><span class="k">${esc(t.fase)}</span><span class="v">${esc(trStatus(p.status))}</span></div>
+      ${tags ? `<div><span class="k">${esc(t.area)}</span><span class="v">${esc(tags)}</span></div>` : ''}
+      ${parc.length ? `<div><span class="k">${esc(t.parceiros)}</span><span class="pj-parc">${parc.map(s =>
+        /^(https:\/\/|assets\/)/.test(s.imagem_url || '') ? `<img src="${esc(s.imagem_url)}" alt="${esc(s.titulo)}" title="${esc(s.titulo)}">`
+                                                          : `<span>${esc(s.titulo)}</span>`).join('')}</span></div>` : ''}
+    </div>`;
+}
+
+function projetoPalco(p){
+  const img = imgProjeto(p);
+  if (!temAnim(p)) return `<div class="pj-tela">${img ? `<img src="${esc(img)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block">`
+                                                    : ph('01', p.nome)}</div>`;
+  return `<div class="pj-tela" data-anim="${esc(p.animacao)}" style="background-image:url('${esc(img)}')">
+    <iframe class="anim" src="anim/${esc(p.animacao)}.html?lang=${state.lang}" title="${esc(T().pj.anim.replace('{n}', p.nome))}"
+      loading="lazy" allow="fullscreen" onload="this.classList.add('pronta')"></iframe>
+  </div>`;
+}
+
+function projetoCorpo(p){
+  const t = T().pj, todos = state.projects, i = todos.findIndex(x => x.slug === p.slug);
+  const prox = todos.length > 1 && i >= 0 ? todos[(i + 1) % todos.length] : null;
+  const desc = pxx(p, 'descricao').split(/\n\s*\n/).map(x => x.trim()).filter(Boolean);
+  const nums = p.numeros || [];
+  const saidas = p.saidas || [];
+  const assunto = encodeURIComponent(t.band.assunto.replace('{n}', p.nome));
+
+  const porque = !desc.length ? '' : `
+  <section class="pj-porque">
+    <div class="statement reveal">
+      <span class="eyebrow">${eyebrow(esc(t.porque))}</span>
+      <div>
+        <p class="big">${esc(desc[0])}</p>
+        ${desc.slice(1).map(x => `<p class="after">${esc(x)}</p>`).join('')}
+      </div>
+    </div>
+  </section>`;
+
+  const numeros = !nums.length ? '' : `
+  <section style="position:relative">
+    <div class="luz" style="width:50vmax;height:50vmax;right:-16vmax;top:-6vmax"></div>
+    <div class="sec-head reveal">
+      <span class="eyebrow">${eyebrow(esc(t.numeros.lb))}</span>
+      <div><h2>${esc(t.numeros.h2)}</h2><p class="sub">${esc(t.numeros.sub)}</p></div>
+    </div>
+    <div class="pj-nums c${Math.min(nums.length, 4)}">${nums.map(numeroBloco).join('')}</div>
+  </section>`;
+
+  /* a produção: carregando (null) não mostra nada; vazia mostra o convite */
+  const producao = p.saidas == null ? '' : `
+  <section>
+    <div class="sec-head reveal">
+      <span class="eyebrow">${eyebrow(esc(t.saidas.lb))}</span>
+      <div><h2>${esc(t.saidas.h2)}</h2><p class="sub">${esc(t.saidas.sub)}</p></div>
+    </div>
+    <div id="pj-saidas">${producaoLista(saidas)}</div>
+  </section>`;
+
+  const proximo = !prox ? '' : `
+  <section>
+    <a class="pj-prox vidro ${fam(prox)} reveal" href="${projLink(prox)}">
+      <div class="tx">
+        <span class="k">${esc(t.prox)}</span>
+        <h2>${esc(prox.nome)}</h2>
+        <p class="tl">${esc(pxx(prox, 'tagline'))}</p>
+      </div>
+      <div class="pj-img">${imgBloco(prox, (i + 1) % todos.length)}</div>
+    </a>
+  </section>`;
+
+  return `${porque}${numeros}${producao}${proximo}
+  <section>
+    <div class="band fam reveal">
+      <svg class="band-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>
+      <span class="eyebrow">${esc(t.band.eyebrow)}</span>
+      <h2>${esc(t.band.h2)}</h2>
+      <p>${esc(t.band.p)}</p>
+      <a class="btn fam" href="mailto:${CONTACT_EMAIL}?subject=${assunto}">${esc(t.band.btn)} <span class="ar">${IC.arrow}</span></a>
+    </div>
+  </section>`;
+}
+
+function producaoLista(saidas){
+  const t = T().pj;
+  if (!saidas.length) return `<div class="pj-semnada reveal"><p>${esc(t.saidas.vazio)}</p>
+    <a class="btn ghost" href="#/news">${esc(t.saidas.vazioAcao)} <span class="ar">${IC.arrow}</span></a></div>`;
+  const tipos = [...new Set(saidas.map(s => s.tipo))];
+  if (!tipos.includes(projeto.filtro)) projeto.filtro = 'todos';
+  const vis = projeto.filtro === 'todos' ? saidas : saidas.filter(s => s.tipo === projeto.filtro);
+  const chips = tipos.length < 2 ? '' : `<div class="pj-chips reveal" role="group" aria-label="${esc(t.saidas.lb)}">
+    ${[['todos', t.saidas.todos, saidas.length], ...tipos.map(k => [k, t.tiposPl[k] || k, saidas.filter(s => s.tipo === k).length])]
+      .map(([k, lb, n]) => `<button type="button" data-f="${esc(k)}" class="${projeto.filtro === k ? 'on' : ''}" aria-pressed="${projeto.filtro === k}">${esc(lb)}<span class="n">${n}</span></button>`).join('')}
+  </div>`;
+  return `${chips}<div class="pj-lista vidro reveal">${vis.map(saidaBloco).join('')}</div>`;
+}
+
+function projetoInit(){
+  const slug = rotaProjeto(), vez = ++projeto.vez;
+  if (projeto.slug !== slug){ projeto.slug = slug; projeto.dados = null; projeto.filtro = 'todos'; projeto.chave = ''; }
+  const p = projetoAtual(slug);
+  if (p) document.title = p.nome + ' | NeuroDynamics';
+  ligarProducao();
+  if (slug === '-' || (projeto.dados && projeto.slug === slug)) return;
+  projetoCarregar(slug, vez);
+}
+
+async function projetoCarregar(slug, vez){
+  if (!sb){ if (!projetoAtual(slug)) projetoSemDados(vez); return; }
+  try{
+    const { data, error } = await sb.rpc('site_projeto_publico', { p_slug:slug });
+    if (vez !== projeto.vez || slug !== rotaProjeto()) return;
+    if (error) throw error;
+    if (data?.status === 'nao_encontrado'){
+      projeto.dados = null;
+      const el = $('#pj-pg');
+      if (el) el.outerHTML = `<div class="pj-pg" id="pj-pg"><a class="pj-voltar" href="#/projects">${IC.arrow} ${esc(T().pj.voltar)}</a>
+        <p class="pj-msg">${esc(T().pj.naoAchou)}</p></div>`;
+      return;
+    }
+    if (data?.status !== 'ok') throw new Error('resposta');
+    projeto.dados = { ...data.projeto, numeros:data.numeros || [], saidas:data.saidas || [] };
+    projetoPintar();
+  }catch(_){
+    /* sem banco: a reserva (ou o que a lista trouxe) fica na tela */
+    if (vez !== projeto.vez) return;
+    const reserva = FALLBACK_PROJECTS.find(p => p.slug === slug);
+    if (reserva){ projeto.dados = reserva; projetoPintar(); }
+    else projetoSemDados(vez);
+  }
+}
+function projetoSemDados(vez){
+  if (vez !== projeto.vez) return;
+  const m = $('#pj-msg'); if (m) m.textContent = T().pj.naoAchou;
+}
+
+/* repinta o que mudou; a animação só se o projeto trocou de animação */
+function projetoPintar(){
+  const slug = rotaProjeto(), p = projetoAtual(slug);
+  const pg = $('#pj-pg'); if (!pg) return;
+  if (!p || !$('#pj-topo')){ render('projects'); return; }
+  const chave = JSON.stringify([state.lang, p, state.projects.map(x => [x.slug, x.nome, x.tagline, x.animacao, x.imagem_url])]);
+  if (chave === projeto.chave) return;
+  projeto.chave = chave;
+  pg.className = 'pj-pg ' + fam(p);
+  document.title = p.nome + ' | NeuroDynamics';
+  $('#pj-topo').innerHTML = projetoTopo(p);
+  const tela = $('#pj-palco .pj-tela');
+  if ((tela?.dataset.anim || '') !== (temAnim(p) ? p.animacao : '')) $('#pj-palco').innerHTML = projetoPalco(p);
+  secN = 0;
+  $('#pj-corpo').innerHTML = projetoCorpo(p);
+  ligarProducao();
+  observe();
+}
+
+function ligarProducao(){
+  document.querySelectorAll('.pj-chips button').forEach(b => b.addEventListener('click', () => {
+    projeto.filtro = b.dataset.f;
+    const p = projetoAtual(rotaProjeto());
+    const el = $('#pj-saidas'); if (!el || !p) return;
+    el.innerHTML = producaoLista(p.saidas || []);
+    el.querySelectorAll('.reveal').forEach(x => x.classList.add('viu'));
+    ligarProducao();
+  }));
+}
+
+/* a animação diz a própria altura (no celular a legenda fica embaixo) */
+window.addEventListener('message', e => {
+  if (e.origin !== location.origin && location.origin !== 'null') return;
+  if (!e.data || e.data.nd !== 'anim' || !(e.data.h > 0)) return;
+  document.querySelectorAll('iframe.anim').forEach(f => {
+    if (f.contentWindow !== e.source) return;
+    f.parentElement.style.setProperty('--alt', Math.ceil(e.data.h) + 'px');
+    f.parentElement.classList.add('medida');
+  });
+});
 
 function pageContact(){
   const t = T().contact;
@@ -1898,6 +2751,7 @@ function render(r){
   NDCasca.menu(false);
   observe();
   if (r === 'about') pressInit();
+  if (r === 'projects') rotaProjeto() ? projetoInit() : indiceInit();
   if (r === 'news') newsInit();
   if (r === 'newsletter') confirmarInit();
   if (r === 'home'){ news.vez++; homeNews(); }
