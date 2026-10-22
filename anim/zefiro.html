@@ -1,0 +1,238 @@
+<!doctype html>
+<!--
+  NeuroDynamics, animação do Zéfiro (controle do ambiente pelo olhar).
+  Cena 2D (cena2d.js): o olhar para sobre um botão do tablet, o módulo
+  reemite o sinal do controle remoto e o aparelho responde. Projeto em
+  conceito: a interface é ilustrativa.
+  Parâmetros: lang=en|pt|fr, t=<s> (congela), poster=1.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zéfiro, animação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600&family=IBM+Plex+Mono:wght@500;600&family=Instrument+Sans:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../ds/tokens.css">
+<link rel="stylesheet" href="anim.css">
+</head>
+<body>
+<main class="anim" id="anim">
+  <div class="stage" id="stage">
+    <div class="stage__status" id="status"></div>
+    <div class="overlay" aria-hidden="true">
+      <svg id="leaders"></svg>
+      <div id="tags"></div>
+    </div>
+    <p class="note" data-t="note"></p>
+  </div>
+  <button class="toggle" type="button" id="toggle"></button>
+  <ol class="legend" id="legend"></ol>
+</main>
+<script src="anim.js"></script>
+<script src="cena2d.js"></script>
+<script>
+const TEXT = {
+  pt: {
+    note: 'Simulação ilustrativa. Projeto em concepção.',
+    pause: 'Pausar a animação', play: 'Reproduzir a animação',
+    botoes: ['TV', 'Luz', 'Ar', 'Ventilador'],
+    tags: {
+      olhar: ['Olhar', 'A câmera do tablet acompanha o olhar. Parar sobre um botão é o clique.'],
+      modulo: ['Módulo', 'Aprende os sinais dos controles remotos da casa e os reemite em infravermelho.'],
+      casa: ['A casa', 'A TV, a luz e o ar respondem como respondem ao controle de sempre.'],
+    },
+  },
+  en: {
+    note: 'Illustrative simulation. Concept-stage project.',
+    pause: 'Pause the animation', play: 'Play the animation',
+    botoes: ['TV', 'Light', 'Air', 'Fan'],
+    tags: {
+      olhar: ['Gaze', 'The tablet camera follows the eyes. Resting on a button is the click.'],
+      modulo: ['Module', 'Learns the signals of the remote controls at home and re-emits them in infrared.'],
+      casa: ['The home', 'The TV, the light and the air conditioning respond as they do to the usual remote.'],
+    },
+  },
+  fr: {
+    note: 'Simulation illustrative. Projet en conception.',
+    pause: 'Mettre l\'animation en pause', play: 'Lire l\'animation',
+    botoes: ['Télé', 'Lumière', 'Clim', 'Ventilateur'],
+    tags: {
+      olhar: ['Regard', 'La caméra de la tablette suit le regard. S\'arrêter sur un bouton vaut un clic.'],
+      modulo: ['Module', 'Il apprend les signaux des télécommandes de la maison et les réémet en infrarouge.'],
+      casa: ['La maison', 'La télé, la lumière et la clim répondent comme à la télécommande habituelle.'],
+    },
+  },
+};
+
+const P = NDPincel, { COR, SYN, TINTA, lerp, clamp, entre, suave } = P;
+const PERIODO = 13;
+/* cada pedido: o botão, quando o olhar chega, quando o clique acontece */
+const PEDIDOS = [
+  { botao: 0, chega: 0.4, clica: 2.0, alvo: 'tv' },
+  { botao: 1, chega: 4.2, clica: 5.8, alvo: 'luz' },
+  { botao: 2, chega: 8.0, clica: 9.6, alvo: 'ar' },
+];
+const DURA = 1.2;          // o olhar parado até virar clique
+const VOO = 0.8;           // o sinal do módulo até o aparelho
+
+function geo(W, H, narrow){
+  if (narrow) return {
+    tab: { x: W * 0.08, y: H * 0.16, w: W * 0.84, h: H * 0.36 },
+    mod: { x: W * 0.92 - 4, y: H * 0.52 + 6 },
+    tv: { x: W * 0.08, y: H * 0.64, w: W * 0.42, h: H * 0.2 },
+    luz: { x: W * 0.68, y: H * 0.70 }, ar: { x: W * 0.58, y: H * 0.88, w: W * 0.34, h: H * 0.06 }
+  };
+  return {
+    tab: { x: W * 0.09, y: H * 0.26, w: W * 0.38, h: H * 0.48 },
+    mod: { x: W * 0.47 + 6, y: H * 0.62 },
+    tv: { x: W * 0.62, y: H * 0.22, w: W * 0.26, h: H * 0.28 },
+    luz: { x: W * 0.66, y: H * 0.70 }, ar: { x: W * 0.76, y: H * 0.64, w: W * 0.16, h: H * 0.08 }
+  };
+}
+function botaoRet(G, i){
+  const pad = 14, gap = 12, t = G.tab, iw = t.w - pad * 2, ih = t.h - pad * 2 - 14;
+  const bw = (iw - gap) / 2, bh = (ih - gap) / 2;
+  return { x: t.x + pad + (i % 2) * (bw + gap), y: t.y + pad + 14 + Math.floor(i / 2) * (bh + gap), w: bw, h: bh };
+}
+/* os ícones, só traço */
+function icone(ctx, i, cx, cy, s, cor){
+  ctx.save(); ctx.strokeStyle = cor; ctx.lineWidth = 1.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
+  if (i === 0){ P.caixa(ctx, cx - s, cy - s * 0.7, s * 2, s * 1.3, 3); ctx.moveTo(cx - s * 0.5, cy + s * 0.95); ctx.lineTo(cx + s * 0.5, cy + s * 0.95); }
+  if (i === 1){ ctx.arc(cx, cy - s * 0.2, s * 0.7, Math.PI * 0.8, Math.PI * 2.2); ctx.moveTo(cx - s * 0.35, cy + s * 0.6); ctx.lineTo(cx + s * 0.35, cy + s * 0.6);
+    ctx.moveTo(cx - s * 0.25, cy + s * 0.9); ctx.lineTo(cx + s * 0.25, cy + s * 0.9); }
+  if (i === 2){ P.caixa(ctx, cx - s * 1.1, cy - s * 0.5, s * 2.2, s * 0.9, 3); ctx.moveTo(cx - s * 0.7, cy + s * 0.15); ctx.lineTo(cx + s * 0.7, cy + s * 0.15);
+    ctx.moveTo(cx - s * 0.5, cy + s * 0.75); ctx.lineTo(cx - s * 0.7, cy + s * 1.05); ctx.moveTo(cx + s * 0.5, cy + s * 0.75); ctx.lineTo(cx + s * 0.7, cy + s * 1.05); }
+  if (i === 3){ ctx.arc(cx, cy, s * 0.9, 0, Math.PI * 2); for (let k = 0; k < 3; k++){ const a = k * 2.094;
+    ctx.moveTo(cx, cy); ctx.quadraticCurveTo(cx + Math.cos(a + 0.6) * s * 0.7, cy + Math.sin(a + 0.6) * s * 0.7, cx + Math.cos(a) * s * 0.75, cy + Math.sin(a) * s * 0.75); } }
+  ctx.stroke(); ctx.restore();
+}
+function alvoPonto(G, k){
+  if (k === 'tv') return [G.tv.x, G.tv.y + G.tv.h / 2];
+  if (k === 'luz') return [G.luz.x - 14, G.luz.y - 14];
+  return [G.ar.x, G.ar.y + G.ar.h / 2];
+}
+
+NDCena({
+  TEXT, periodo: PERIODO, quadroParado: 3.6,
+  TAGS: [
+    { key: 'olhar', wide: [0.04, 0.05, 'left'], narrow: [0.05, 0.03, 'left'] },
+    { key: 'modulo', wide: [0.04, 0.82, 'left'], narrow: [0.05, 0.56, 'left'] },
+    { key: 'casa', wide: [0.96, 0.05, 'right'], narrow: [0.95, 0.03, 'right'] },
+  ],
+  desenhar(ctx, t, W, H, { narrow, TEXT }){
+    P.grade(ctx, W, H);
+    const G = geo(W, H, narrow);
+    const fade = 1 - entre(t, PERIODO - 0.9, PERIODO - 0.1);
+    ctx.globalAlpha = fade;
+
+    /* o estado da casa em t */
+    const ligado = { tv: 0, luz: 0, ar: 0 }, ativo = [0, 0, 0, 0];
+    let sinal = null;
+    PEDIDOS.forEach(pd => {
+      const k = entre(t, pd.clica + VOO - 0.1, pd.clica + VOO + 0.4);
+      ligado[pd.alvo] = Math.max(ligado[pd.alvo], k);
+      ativo[pd.botao] = Math.max(ativo[pd.botao], entre(t, pd.clica, pd.clica + 0.25) * (1 - entre(t, pd.clica + 1.6, pd.clica + 2.2)));
+      if (t >= pd.clica && t <= pd.clica + VOO + 0.3) sinal = { pd, k: (t - pd.clica) / VOO };
+    });
+
+    /* o olhar: vai de um botão a outro e para */
+    let gz = null, dwell = 0;
+    for (let i = PEDIDOS.length - 1; i >= 0; i--){
+      const pd = PEDIDOS[i]; if (t < pd.chega - 0.6) continue;
+      const b = botaoRet(G, pd.botao), dest = [b.x + b.w / 2, b.y + b.h / 2];
+      const prev = i ? botaoRet(G, PEDIDOS[i - 1].botao) : { x: G.tab.x + G.tab.w / 2 - 20, y: G.tab.y + G.tab.h / 2 - 20, w: 40, h: 40 };
+      const orig = [prev.x + prev.w / 2, prev.y + prev.h / 2];
+      const k = entre(t, pd.chega - 0.6, pd.chega + 0.2);
+      gz = [lerp(orig[0], dest[0], k) + Math.sin(t * 7) * 1.5, lerp(orig[1], dest[1], k) + Math.cos(t * 5) * 1.5];
+      dwell = clamp((t - (pd.clica - DURA)) / DURA);
+      if (t > pd.clica) dwell = 0;
+      break;
+    }
+    if (!gz){ const b = G.tab; gz = [b.x + b.w / 2 + Math.sin(t * 2) * 10, b.y + b.h / 2]; }
+
+    /* o tablet */
+    const tb = G.tab;
+    P.caixa(ctx, tb.x - 8, tb.y - 8, tb.w + 16, tb.h + 16, 18); ctx.fillStyle = COR.escuro; ctx.fill(); ctx.strokeStyle = TINTA(0.18); ctx.stroke();
+    P.caixa(ctx, tb.x, tb.y, tb.w, tb.h, 10); ctx.fillStyle = COR.painel; ctx.fill();
+    const cam = [tb.x + tb.w / 2, tb.y - 3];
+    ctx.fillStyle = TINTA(0.5); ctx.beginPath(); ctx.arc(cam[0], cam[1], 2.2, 0, Math.PI * 2); ctx.fill();
+    TEXT.botoes.forEach((nome, i) => {
+      const b = botaoRet(G, i), a = ativo[i];
+      P.caixa(ctx, b.x, b.y, b.w, b.h, 9);
+      ctx.fillStyle = `rgba(206,220,0,${0.03 + a * 0.12})`; ctx.fill();
+      ctx.strokeStyle = a > 0.05 ? SYN(0.4 + a * 0.5) : TINTA(0.14); ctx.lineWidth = 1; ctx.stroke();
+      const s = Math.min(b.w, b.h) * (narrow ? 0.16 : 0.15);
+      icone(ctx, i, b.x + b.w / 2, b.y + b.h / 2 - s * 0.6, s, a > 0.05 ? SYN(0.9) : COR.clay);
+      P.rotulo(ctx, nome, b.x + b.w / 2, b.y + b.h - (narrow ? 8 : 12), { alinha: 'center', cor: a > 0.05 ? COR.synapse : COR.nevoa, tam: narrow ? 8 : 10 });
+    });
+    /* o cursor do olhar, com o anel que enche */
+    ctx.save(); P.brilho(ctx, SYN(0.6), 14);
+    ctx.strokeStyle = SYN(0.9); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(gz[0], gz[1], 11, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = SYN(0.9); ctx.beginPath(); ctx.arc(gz[0], gz[1], 2.5, 0, Math.PI * 2); ctx.fill();
+    if (dwell > 0){ ctx.strokeStyle = SYN(1); ctx.lineWidth = 2.5; ctx.beginPath();
+      ctx.arc(gz[0], gz[1], 17, -Math.PI / 2, -Math.PI / 2 + dwell * Math.PI * 2); ctx.stroke(); }
+
+    /* o módulo, preso ao tablet */
+    const md = G.mod, mw = narrow ? 26 : 30, mh = narrow ? 18 : 22;
+    P.caixa(ctx, md.x - (narrow ? mw : 0), md.y - mh / 2, mw, mh, 5); ctx.fillStyle = '#2a3230'; ctx.fill(); ctx.strokeStyle = TINTA(0.25); ctx.stroke();
+    const led = [narrow ? md.x - mw + 6 : md.x + mw - 6, md.y];
+    const pisca = sinal ? 0.5 + 0.5 * Math.sin(t * 40) : 0;
+    ctx.save(); if (pisca) P.brilho(ctx, SYN(0.9), 12);
+    ctx.fillStyle = sinal ? SYN(0.5 + pisca * 0.5) : TINTA(0.25); ctx.beginPath(); ctx.arc(led[0], led[1], 3, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+
+    /* o sinal: arcos que viajam do módulo ao aparelho */
+    if (sinal){
+      const dst = alvoPonto(G, sinal.pd.alvo), ang = Math.atan2(dst[1] - led[1], dst[0] - led[0]);
+      for (let k = 0; k < 4; k++){
+        const f = sinal.k - k * 0.12; if (f < 0 || f > 1) continue;
+        const x = lerp(led[0], dst[0], f), y = lerp(led[1], dst[1], f);
+        ctx.strokeStyle = SYN(0.75 * (1 - f * 0.6)); ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.arc(x, y, 10 + k * 2, ang - 0.6, ang + 0.6); ctx.stroke();
+      }
+    }
+
+    /* a TV: a tela acende em Axon e Cortex */
+    const tv = G.tv;
+    P.caixa(ctx, tv.x - 6, tv.y - 6, tv.w + 12, tv.h + 12, 8); ctx.fillStyle = COR.escuro; ctx.fill(); ctx.strokeStyle = TINTA(0.2); ctx.stroke();
+    P.caixa(ctx, tv.x, tv.y, tv.w, tv.h, 4); ctx.fillStyle = '#030504'; ctx.fill();
+    if (ligado.tv > 0){
+      ctx.save(); ctx.globalAlpha *= ligado.tv;
+      const g = ctx.createLinearGradient(tv.x, tv.y, tv.x + tv.w, tv.y + tv.h);
+      g.addColorStop(0, '#00352F'); g.addColorStop(1, '#00594F');
+      P.caixa(ctx, tv.x, tv.y, tv.w, tv.h, 4); ctx.fillStyle = g; ctx.fill();
+      for (let k = 0; k < 3; k++){ const yy = tv.y + tv.h * (0.62 + k * 0.1);
+        ctx.fillStyle = TINTA(0.25 - k * 0.06); ctx.fillRect(tv.x + tv.w * 0.1, yy, tv.w * (0.6 - k * 0.15), 3); }
+      ctx.restore();
+    }
+    ctx.strokeStyle = TINTA(0.2); ctx.beginPath(); ctx.moveTo(tv.x + tv.w / 2, tv.y + tv.h + 6); ctx.lineTo(tv.x + tv.w / 2, tv.y + tv.h + 18);
+    ctx.moveTo(tv.x + tv.w * 0.36, tv.y + tv.h + 18); ctx.lineTo(tv.x + tv.w * 0.64, tv.y + tv.h + 18); ctx.stroke();
+
+    /* a luz */
+    const lz = G.luz, rl = narrow ? 12 : 16;
+    if (ligado.luz > 0){ const g = ctx.createRadialGradient(lz.x, lz.y - rl, 0, lz.x, lz.y - rl, rl * 7);
+      g.addColorStop(0, `rgba(232,237,235,${0.35 * ligado.luz})`); g.addColorStop(1, 'rgba(232,237,235,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(lz.x, lz.y - rl, rl * 7, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = ligado.luz > 0.1 ? `rgba(240,242,240,${0.4 + 0.6 * ligado.luz})` : COR.escuro;
+    ctx.strokeStyle = TINTA(0.35); ctx.beginPath(); ctx.arc(lz.x, lz.y - rl, rl, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = TINTA(0.22); ctx.beginPath(); ctx.moveTo(lz.x, lz.y); ctx.lineTo(lz.x, lz.y + (narrow ? 34 : 60));
+    ctx.moveTo(lz.x - 16, lz.y + (narrow ? 34 : 60)); ctx.lineTo(lz.x + 16, lz.y + (narrow ? 34 : 60)); ctx.stroke();
+
+    /* o ar: o visor mostra a temperatura e o ar sai */
+    const ar = G.ar;
+    P.caixa(ctx, ar.x, ar.y, ar.w, ar.h, 6); ctx.fillStyle = COR.escuro; ctx.fill(); ctx.strokeStyle = TINTA(0.22); ctx.stroke();
+    ctx.strokeStyle = TINTA(0.15); ctx.beginPath(); ctx.moveTo(ar.x + 8, ar.y + ar.h - 6); ctx.lineTo(ar.x + ar.w - 8, ar.y + ar.h - 6); ctx.stroke();
+    if (ligado.ar > 0){
+      P.mono(ctx, '23°', ar.x + ar.w - 10, ar.y + ar.h * 0.55, { alinha: 'right', cor: `rgba(206,220,0,${ligado.ar})`, tam: narrow ? 10 : 12 });
+      for (let k = 0; k < 3; k++){ const f = ((t * 0.8 + k / 3) % 1);
+        ctx.strokeStyle = TINTA(0.25 * (1 - f) * ligado.ar); ctx.beginPath();
+        const yy = ar.y + ar.h + 6 + f * 26; ctx.moveTo(ar.x + ar.w * 0.2, yy); ctx.quadraticCurveTo(ar.x + ar.w * 0.5, yy + 6, ar.x + ar.w * 0.8, yy); ctx.stroke(); }
+    }
+    ctx.globalAlpha = 1;
+    return { olhar: cam, modulo: led, casa: [tv.x + tv.w / 2, tv.y - 6] };
+  },
+});
+</script>
+</body>
+</html>

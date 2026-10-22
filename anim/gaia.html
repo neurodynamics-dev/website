@@ -1,0 +1,213 @@
+<!doctype html>
+<!--
+  NeuroDynamics, animação da Gaia (revisão sistemática sobre FES-cycling).
+  Cena 2D (cena2d.js): os estudos saem das bases, passam pela triagem e
+  pelo texto completo, e os incluídos se organizam pelos desfechos que a
+  revisão sintetiza. Sem números: a revisão está em andamento.
+  Parâmetros: lang=en|pt|fr, t=<s> (congela), poster=1.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gaia, animação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600&family=IBM+Plex+Mono:wght@500;600&family=Instrument+Sans:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../ds/tokens.css">
+<link rel="stylesheet" href="anim.css">
+</head>
+<body>
+<main class="anim" id="anim">
+  <div class="stage" id="stage">
+    <div class="stage__status" id="status"></div>
+    <div class="overlay" aria-hidden="true">
+      <svg id="leaders"></svg>
+      <div id="tags"></div>
+    </div>
+    <p class="note" data-t="note"></p>
+  </div>
+  <button class="toggle" type="button" id="toggle"></button>
+  <ol class="legend" id="legend"></ol>
+</main>
+<script src="anim.js"></script>
+<script src="cena2d.js"></script>
+<script>
+const TEXT = {
+  pt: {
+    note: 'Simulação ilustrativa. Revisão em andamento.',
+    pause: 'Pausar a animação', play: 'Reproduzir a animação',
+    bases: ['PubMed', 'Embase', 'PEDro'], etapas: ['Busca', 'Triagem', 'Texto completo', 'Incluídos'],
+    desfechos: ['Cardio', 'Músculo', 'Função', 'Segurança'], fora: 'Excluídos',
+    tags: {
+      busca: ['Busca', 'Estratégia estruturada nas principais bases da área, como PubMed, Embase e PEDro.'],
+      triagem: ['Triagem', 'Revisores independentes leem título, resumo e texto completo de cada estudo.'],
+      sintese: ['Síntese', 'Os incluídos são avaliados quanto ao risco de viés e organizados por desfecho.'],
+    },
+  },
+  en: {
+    note: 'Illustrative simulation. Review in progress.',
+    pause: 'Pause the animation', play: 'Play the animation',
+    bases: ['PubMed', 'Embase', 'PEDro'], etapas: ['Search', 'Screening', 'Full text', 'Included'],
+    desfechos: ['Cardio', 'Muscle', 'Function', 'Safety'], fora: 'Excluded',
+    tags: {
+      busca: ['Search', 'A structured strategy across the main databases of the field, such as PubMed, Embase and PEDro.'],
+      triagem: ['Screening', 'Independent reviewers read the title, abstract and full text of each study.'],
+      sintese: ['Synthesis', 'Included studies are appraised for risk of bias and organised by outcome.'],
+    },
+  },
+  fr: {
+    note: 'Simulation illustrative. Revue en cours.',
+    pause: 'Mettre l\'animation en pause', play: 'Lire l\'animation',
+    bases: ['PubMed', 'Embase', 'PEDro'], etapas: ['Recherche', 'Tri', 'Texte intégral', 'Inclus'],
+    desfechos: ['Cardio', 'Muscle', 'Fonction', 'Sécurité'], fora: 'Exclus',
+    tags: {
+      busca: ['Recherche', 'Une stratégie structurée dans les principales bases du domaine, comme PubMed, Embase et PEDro.'],
+      triagem: ['Tri', 'Des relecteurs indépendants lisent le titre, le résumé et le texte intégral de chaque étude.'],
+      sintese: ['Synthèse', 'Les études incluses sont évaluées pour le risque de biais et classées par critère de jugement.'],
+    },
+  },
+};
+
+const P = NDPincel, { COR, SYN, TINTA, lerp, clamp, entre, suave } = P;
+const PERIODO = 15;
+
+/* os estudos: de que base vêm, quando saem, onde param */
+const rnd = P.semente(7);
+const ESTUDOS = Array.from({ length: 96 }, (_, i) => {
+  const r = rnd();
+  const destino = r < 0.6 ? 1 : r < 0.84 ? 2 : 3;   // 1: fora na triagem, 2: fora no texto completo, 3: incluído
+  return { base: i % 3, t0: 0.4 + rnd() * 3.6, j: rnd() * 2 - 1, k: rnd() * 2 - 1, destino,
+           desfechos: [0, 1, 2, 3].filter(() => rnd() < 0.45) };
+});
+ESTUDOS.filter(e => e.destino === 3).forEach((e, n) => { e.n = n; if (!e.desfechos.length) e.desfechos = [n % 4]; });
+/* a ordem de cada estudo dentro da coluna de cada desfecho: a coluna cresce de baixo para cima */
+const ORDEM = [0, 1, 2, 3].map(d => ESTUDOS.filter(e => e.destino === 3 && e.desfechos.includes(d)));
+const INCLUIDOS = ESTUDOS.filter(e => e.destino === 3).length;
+
+function geometria(W, H, narrow){
+  const top = narrow ? 0.30 : 0.30, base = narrow ? 0.80 : 0.78;
+  return {
+    xBase: W * (narrow ? 0.12 : 0.11), x1: W * (narrow ? 0.34 : 0.31), x2: W * (narrow ? 0.52 : 0.47), x3: W * (narrow ? 0.66 : 0.61),
+    mid: H * 0.52, banda: H * (base - top) / 2, top: H * top, base: H * base, chao: H * (narrow ? 0.9 : 0.9),
+    gx: W * (narrow ? 0.70 : 0.68), gw: W * (narrow ? 0.27 : 0.27), gy: H * (narrow ? 0.40 : 0.42), gh: H * (narrow ? 0.40 : 0.36)
+  };
+}
+const baseY = (G, b) => G.mid + (b - 1) * G.banda * 0.62;
+/* onde cada estudo está em t: segmentos de 1,1 s entre as etapas */
+function posicao(e, t, G){
+  const s = t - e.t0; if (s < 0) return null;
+  const A = [G.xBase + 28, baseY(G, e.base) + e.j * 6];
+  const B = [G.x1, G.mid + e.j * G.banda * 0.55];
+  const C = [G.x2, G.mid + e.j * G.banda * 0.4];
+  const D = [G.x3, G.mid + e.j * G.banda * 0.3];
+  const seg = (p, q, k) => [lerp(p[0], q[0], suave(k)), lerp(p[1], q[1], suave(k))];
+  const pilha = (x, ordem) => [x + (ordem % 6) * 5 - 12, G.chao - Math.floor(ordem / 6) * 5];
+  if (s < 1.1) return { p: seg(A, B, s / 1.1), estado: 'vai' };
+  if (e.destino === 1){
+    const o = ESTUDOS.filter(x => x.destino === 1).indexOf(e);
+    return { p: seg(B, pilha(G.x1, o), (s - 1.1) / 0.9), estado: 'fora', k: clamp((s - 1.1) / 0.9) };
+  }
+  if (s < 2.2) return { p: seg(B, C, (s - 1.1) / 1.1), estado: 'vai' };
+  if (e.destino === 2){
+    const o = ESTUDOS.filter(x => x.destino === 2).indexOf(e);
+    return { p: seg(C, pilha(G.x2, o), (s - 2.2) / 0.9), estado: 'fora', k: clamp((s - 2.2) / 0.9) };
+  }
+  if (s < 3.3) return { p: seg(C, D, (s - 2.2) / 1.1), estado: 'vai' };
+  return { p: D, estado: 'dentro', k: clamp((s - 3.3) / 1.4) };
+}
+/* a célula de cada estudo incluído em cada desfecho */
+function celula(G, d, e, narrow){
+  const m = ORDEM[d].indexOf(e), cw = G.gw / 4, passo = narrow ? 8 : 12;
+  return [G.gx + d * cw + cw / 2 + ((m % 3) - 1) * passo, G.gy + G.gh - (narrow ? 12 : 18) - Math.floor(m / 3) * passo];
+}
+
+NDCena({
+  TEXT, periodo: PERIODO, quadroParado: 10.5,
+  TAGS: [
+    { key: 'busca', wide: [0.04, 0.05, 'left'], narrow: [0.05, 0.03, 'left'] },
+    { key: 'triagem', wide: [0.34, 0.05, 'left'], narrow: [0.95, 0.03, 'right'] },
+    { key: 'sintese', wide: [0.96, 0.84, 'right'], narrow: [0.95, 0.93, 'right'] },
+  ],
+  desenhar(ctx, t, W, H, { narrow, TEXT }){
+    P.grade(ctx, W, H);
+    const G = geometria(W, H, narrow);
+    const fade = 1 - entre(t, PERIODO - 1.4, PERIODO - 0.2);
+    const entra = entre(t, 0, 0.8);
+    ctx.globalAlpha = fade * entra;
+
+    /* as etapas: linha vertical e o nome em cima */
+    TEXT.etapas.forEach((nome, i) => {
+      const x = [G.xBase, G.x1, G.x2, G.x3][i];
+      ctx.strokeStyle = TINTA(i ? 0.14 : 0); ctx.lineWidth = 1;
+      if (i){ ctx.setLineDash([3, 5]); ctx.beginPath(); ctx.moveTo(x + .5, G.top - 6); ctx.lineTo(x + .5, G.base + 6); ctx.stroke(); ctx.setLineDash([]); }
+      P.rotulo(ctx, nome, x, G.top - 18, { alinha: 'center', cor: COR.nevoa, tam: narrow ? 8.5 : 10 });
+    });
+    P.rotulo(ctx, TEXT.fora, (G.x1 + G.x2) / 2, G.chao + 22, { alinha: 'center', cor: COR.grafite, tam: narrow ? 8 : 9.5 });
+
+    /* as bases */
+    TEXT.bases.forEach((b, i) => {
+      const y = baseY(G, i), w = narrow ? 58 : 84, h = narrow ? 22 : 28;
+      P.caixa(ctx, G.xBase - w / 2, y - h / 2, w, h, 7);
+      ctx.fillStyle = COR.painel; ctx.fill(); ctx.strokeStyle = TINTA(0.22); ctx.stroke();
+      P.mono(ctx, b, G.xBase, y + 4, { alinha: 'center', cor: COR.clay, tam: narrow ? 9 : 11 });
+    });
+
+    /* a grade dos desfechos */
+    const cw = G.gw / 4, cheia = entre(t, 6.5, 8.5);
+    TEXT.desfechos.forEach((d, i) => {
+      const x = G.gx + i * cw;
+      P.caixa(ctx, x + 3, G.gy, cw - 6, G.gh, 9);
+      ctx.fillStyle = `rgba(206,220,0,${0.025 + 0.05 * cheia})`; ctx.fill();
+      ctx.strokeStyle = TINTA(0.12 + 0.1 * cheia); ctx.stroke();
+      P.rotulo(ctx, d, x + cw / 2, G.gy - 18, { alinha: 'center', cor: COR.nevoa, tam: narrow ? 8 : 9.5 });
+    });
+
+    /* os estudos: um rastro curto atrás de cada um, um anel ao passar por uma etapa */
+    const r = narrow ? 2 : 2.6, lado = narrow ? 5 : 8;
+    for (const e of ESTUDOS){
+      const q = posicao(e, t, G); if (!q) continue;
+      const [x, y] = q.p;
+      if (q.estado === 'dentro'){
+        /* chega aos incluídos e se copia para a coluna de cada desfecho que mede */
+        e.desfechos.forEach(d => {
+          const c = celula(G, d, e, narrow);
+          const px = lerp(x, c[0], suave(q.k)), py = lerp(y, c[1], suave(q.k));
+          ctx.save(); P.brilho(ctx, SYN(0.8), 10); ctx.fillStyle = SYN(0.95);
+          const l = lerp(r * 2, lado, suave(q.k));
+          ctx.fillRect(px - l / 2, py - l / 2, l, l); ctx.restore();
+        });
+        continue;
+      }
+      const ant = posicao(e, t - 0.14, G);
+      const fora = q.estado === 'fora';
+      if (ant && !fora){
+        const g = ctx.createLinearGradient(ant.p[0], ant.p[1], x, y);
+        g.addColorStop(0, TINTA(0)); g.addColorStop(1, TINTA(0.35));
+        ctx.strokeStyle = g; ctx.lineWidth = r * 1.2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(ant.p[0], ant.p[1]); ctx.lineTo(x, y); ctx.stroke();
+      }
+      ctx.fillStyle = fora ? `rgba(97,108,104,${lerp(0.85, 0.6, q.k)})` : TINTA(0.9);
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      /* o anel da leitura, ao cruzar cada etapa */
+      const s = t - e.t0;
+      [[1.1, G.x1], [2.2, G.x2], [3.3, G.x3]].forEach(([tg, gx]) => {
+        const k = (s - tg) / 0.45;
+        if (k < 0 || k > 1 || (tg === 2.2 && e.destino < 2) || (tg === 3.3 && e.destino < 3)) return;
+        const yy = tg === 1.1 ? G.mid + e.j * G.banda * 0.55 : tg === 2.2 ? G.mid + e.j * G.banda * 0.4 : G.mid + e.j * G.banda * 0.3;
+        ctx.strokeStyle = SYN(0.5 * (1 - k)); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(gx, yy, 3 + k * 10, 0, Math.PI * 2); ctx.stroke();
+      });
+    }
+    ctx.globalAlpha = 1;
+
+    return {
+      busca: [G.xBase + (narrow ? 29 : 42), baseY(G, 0)],
+      triagem: [G.x1, G.top - 4],
+      sintese: [G.gx + G.gw / 2, G.gy + G.gh * 0.55],
+    };
+  },
+});
+</script>
+</body>
+</html>

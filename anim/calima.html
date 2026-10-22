@@ -1,0 +1,957 @@
+<!doctype html>
+<!--
+  NeuroDynamics · reference animation (FES cycling). Starting point for every
+  new "animação neuro": copy this file next to human.glb and logo-white.png.
+
+  Map of the file (search for the "// ----------" headers):
+    TEXT ............... all copy, pt + en; tags[] = labels, in TAGS order
+    materials / clay ... skin shader: clothes, logo, muscle glow, painted
+                         electrodes, EEG band + forehead pads (all bind space)
+    trike .............. the equipment, built from three.js primitives
+    rider .............. loads the rig, scales it to the equipment, bone map
+    activation model ... when each muscle fires (simplified, say so on screen)
+    posing ............. aim() + two-bone ik(); pose(theta) per frame
+    electrodes/cables .. pad layout on skin vertices, cable routing
+    EEG ................ scalp-vertex path for the head leads
+    update(time) ....... everything that moves, once per frame
+    camera ............. near-still; ?phi ?d ?head for checks
+    labels ............. TAGS slots, typing, leaders, magnifier box
+    renderZoom() ....... live close-up (second camera, scissor)
+
+  Debug URL params: t=<sec>|q|h (freeze; q/h = peak of front/back thigh),
+  phi=<deg> d=<m> head=1 (camera), all=q|h (force glow), wp=1 (world-pos
+  test), nude=1 (no clothes), m=<name> (other .glb), measure=1 (log head
+  extents in the console).
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calima, animação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600&family=IBM+Plex+Mono:wght@500;600&family=Instrument+Sans:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../ds/tokens.css">
+<link rel="stylesheet" href="anim.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<main class="anim" id="anim">
+  <div class="stage" id="stage">
+    <div class="stage__status" id="status"></div>
+    <div class="overlay" aria-hidden="true">
+      <svg id="leaders"></svg>
+      <div id="tags"></div>
+    </div>
+    <p class="note" data-t="note"></p>
+  </div>
+  <button class="toggle" type="button" id="toggle"></button>
+  <ol class="legend" id="legend"></ol>
+</main>
+<script src="anim.js"></script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const TEXT = {
+  pt: {
+    note: 'Simulação ilustrativa. Projeto em pesquisa.',
+    pause: 'Pausar a animação', play: 'Reproduzir a animação', detail: 'Detalhe',
+    // Por chave de TAGS. O EEG só aparece com ?eeg=1.
+    tags: {
+      band: ['EEG', 'Registra a atividade cerebral ligada à intenção de pedalar.'],
+      pad: ['Estimulação muscular', 'Eletrodos na coxa contraem o quadríceps quando a perna estende e os posteriores quando ela dobra.'],
+      sensor: ['Ângulo do pedal', 'Um sensor inercial sem fio acompanha o pedal em tempo real.'],
+      stim: ['Connect®', 'O eletroestimulador da Visuri recebe o ângulo e decide quando cada canal dispara.'],
+    },
+  },
+  en: {
+    note: 'Illustrative simulation. Research project.',
+    pause: 'Pause the animation', play: 'Play the animation', detail: 'Detail',
+    tags: {
+      band: ['EEG', 'Records the brain activity linked to the intention to pedal.'],
+      pad: ['Muscle stimulation', 'Electrodes on the thigh contract the quadriceps as the leg extends and the hamstrings as it bends.'],
+      sensor: ['Pedal angle', 'A wireless inertial sensor tracks the pedal in real time.'],
+      stim: ['Connect®', 'Visuri\'s stimulator receives the angle and decides when each channel fires.'],
+    },
+  },
+  fr: {
+    note: 'Simulation illustrative. Projet de recherche.',
+    pause: 'Mettre l\'animation en pause', play: 'Lire l\'animation', detail: 'Détail',
+    tags: {
+      band: ['EEG', 'Enregistre l\'activité cérébrale liée à l\'intention de pédaler.'],
+      pad: ['Stimulation musculaire', 'Des électrodes sur la cuisse contractent le quadriceps quand la jambe s\'étend et les ischio-jambiers quand elle se plie.'],
+      sensor: ['Angle de la pédale', 'Un capteur inertiel sans fil suit la pédale en temps réel.'],
+      stim: ['Connect®', 'Le stimulateur de Visuri reçoit l\'angle et décide quand chaque canal se déclenche.'],
+    },
+  },
+};
+
+const $ = (id) => document.getElementById(id);
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const params = new URLSearchParams(location.search);
+const stage = $('stage');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let lang = NDAnim.lang;
+let playing = !reduced;
+
+// ---------- renderer & scene ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+// At least 1.5x even on 1x screens: the browser scales the canvas down, which
+// smooths edges. Capped at 1.75 for phones.
+renderer.setPixelRatio(Math.min(Math.max(devicePixelRatio, 1.5), 1.75));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.shadowMap.enabled = true;
+stage.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x050807);
+scene.fog = new THREE.Fog(0x050807, 4.5, 9);
+const camera = new THREE.PerspectiveCamera(30, 16 / 9, 0.05, 40);
+const target = V(0, 0.52, 0.02);
+
+scene.add(new THREE.HemisphereLight(0xe6ecea, 0x0b1210, 0.9));
+const key = new THREE.DirectionalLight(0xffffff, 2.3);
+key.position.set(2.2, 4.2, 2.6);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -1.6, right: 1.6, top: 1.6, bottom: -1.6, near: 0.5, far: 12 });
+key.shadow.bias = -0.0003;
+key.shadow.radius = 4;
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xb9c7d6, 0.55);
+fill.position.set(-3, 1.2, 1.5);
+scene.add(fill);
+const back = new THREE.DirectionalLight(0xffffff, 0.8);
+back.position.set(-1.5, 2.2, -3.5);
+scene.add(back);
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.ShadowMaterial({ opacity: 0.45 }));
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+const grid = new THREE.GridHelper(8, 32, 0x9aa5a1, 0x9aa5a1);
+grid.material.transparent = true;
+grid.material.opacity = 0.05;
+grid.position.y = 0.001;
+scene.add(grid);
+
+// ---------- materials ----------
+const clay = new THREE.MeshStandardMaterial({ color: 0xc6cdcb, roughness: 0.82, metalness: 0 });
+// The working muscle lights the skin of the thigh: the front face for the
+// quadriceps, the back face for the hamstrings. Each thigh is described by its
+// hip-to-knee axis and the direction its front faces, so clothing thickness
+// doesn't matter.
+const muscleGlow = {
+  uAxis: { value: Array.from({ length: 4 }, () => new THREE.Vector3(0, -9, 0)) },
+  uQuadDir: { value: [new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 1, 0)] },
+  uHamDir: { value: [new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, -1, 0)] },
+  uAct: { value: [0, 0, 0, 0] },
+  uLime: { value: new THREE.Color(0xcedc00) },
+  uLogo: { value: new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1) },
+  uIcon: { value: new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1) },
+  // Electrodes are painted onto the skin, like a sticker: centre, thigh axis and
+  // outward normal of each pad, all in the body's rest (bind) space.
+  uPadC: { value: Array.from({ length: 8 }, () => new THREE.Vector3(0, -9, 0)) },
+  uPadU: { value: Array.from({ length: 8 }, () => new THREE.Vector3(0, 1, 0)) },
+  uPadN: { value: Array.from({ length: 8 }, () => new THREE.Vector3(0, 0, 1)) },
+  // Head bone in the same rest space: the EEG band and pads are painted relative to it.
+  uHead: { value: new THREE.Vector3(0, -9, 0) },
+};
+muscleGlow.uLogo.value.needsUpdate = true;
+new THREE.TextureLoader().load('modelo/logo-camisa.png', (tex) => {
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  muscleGlow.uLogo.value = tex;
+});
+new THREE.TextureLoader().load('modelo/simbolo-manga.png', (tex) => {
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  muscleGlow.uIcon.value = tex;
+});
+clay.defines = params.has('wp') ? { DEBUG_WP: '' } : {};
+if (!params.has('nude')) clay.defines.CLOTHES = '';
+const EEG = params.has('eeg');
+if (EEG) clay.defines.EEG = '';
+clay.onBeforeCompile = (shader) => {
+  Object.assign(shader.uniforms, muscleGlow);
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', `#include <common>
+      varying vec3 vWorldPos;
+      varying vec3 vBind;`)
+    .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+      vWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
+      vBind = position;`);
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', `#include <common>
+      varying vec3 vWorldPos;
+      varying vec3 vBind;
+      uniform vec3 uAxis[4];
+      uniform vec3 uQuadDir[2];
+      uniform vec3 uHamDir[2];
+      uniform float uAct[4];
+      uniform vec3 uLime;
+      uniform sampler2D uLogo;
+      uniform sampler2D uIcon;
+      uniform vec3 uPadC[8];
+      uniform vec3 uPadU[8];
+      uniform vec3 uPadN[8];
+      uniform vec3 uHead;
+      float thighGlow(vec3 p, vec3 a, vec3 k, vec3 quadDir, vec3 hamDir, float side, float q, float h) {
+        vec3 ba = k - a;
+        float t = clamp(dot(p - a, ba) / dot(ba, ba), 0.0, 1.0);
+        vec3 radial = p - (a + ba * t);
+        float along = smoothstep(0.38, 0.52, t) * (1.0 - smoothstep(0.84, 0.95, t));
+        float near = 1.0 - smoothstep(0.11, 0.16, length(radial));
+        float ownSide = step(0.0, p.x * side);
+        vec3 dir = normalize(radial);
+        return along * near * ownSide * (q * smoothstep(0.2, 0.7, dot(dir, quadDir)) + h * smoothstep(0.2, 0.7, dot(dir, hamDir)));
+      }`)
+    .replace('#include <color_fragment>', `#include <color_fragment>
+      // Clothing painted onto the standing (bind) pose so it moves with the
+      // body: shorts to mid-thigh and a short-sleeved shirt, a shade darker.
+      #ifdef CLOTHES
+      float ax = abs(vBind.x);
+      float shorts = step(0.74, vBind.y) * step(vBind.y, 1.04) * step(ax, 0.3);
+      float shirt = max(step(1.0, vBind.y) * step(vBind.y, 1.52) * step(ax, 0.215),
+                        step(1.33, vBind.y) * step(vBind.y, 1.57) * step(0.17, ax) * step(ax, 0.4));
+      // Hems: a thin darker band where each garment ends, so it reads as cloth.
+      float hem = shorts * (1.0 - smoothstep(0.0, 0.012, vBind.y - 0.74))
+                + max(shirt - shorts, 0.0) * (1.0 - smoothstep(0.0, 0.012, 1.52 - vBind.y) * step(ax, 0.215))
+                + step(1.33, vBind.y) * step(vBind.y, 1.57) * (1.0 - smoothstep(0.0, 0.012, 0.4 - ax)) * step(0.17, ax);
+      float shirtOnly = max(shirt - shorts, 0.0);
+      // The team's black shirt; shorts a shade lighter so the two garments read apart.
+      diffuseColor.rgb *= (1.0 - 0.55 * shorts) * (1.0 - 0.78 * shirtOnly) * (1.0 - 0.35 * clamp(hem, 0.0, 1.0));
+      // NeuroDynamics wordmark across the chest, projected from the front.
+      vec2 luv = vec2((vBind.x + 0.1025) / 0.205, (vBind.y - 1.318) / 0.035);
+      float inLogo = step(0.0, luv.x) * step(luv.x, 1.0) * step(0.0, luv.y) * step(luv.y, 1.0) * step(0.03, vBind.z) * shirtOnly;
+      vec4 logoTex = texture2D(uLogo, clamp(luv, 0.0, 1.0));
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92), inLogo * logoTex.a * logoTex.r);
+      // The NeuroDynamics symbol (no wordmark) on the outer side of each
+      // sleeve. Measured on the rest pose: shoulder joint (0.212, 1.455,
+      // -0.065) to elbow (0.463, 1.455, -0.073); the face that points up in
+      // the T-pose is the outer side once the arm hangs.
+      for (int k = 0; k < 2; k++) {
+        float sd = k == 0 ? 1.0 : -1.0;
+        vec3 sa = vec3(0.212 * sd, 1.455, -0.065), sb = vec3(0.463 * sd, 1.455, -0.073);
+        vec3 ab = sb - sa;
+        float st = dot(vBind - sa, ab) / dot(ab, ab);
+        vec3 sr = vBind - (sa + ab * st);
+        float ang = atan(sr.z, sr.y);                      // 0 on the outer side
+        // Upright when the arm hangs: the top of the symbol points to the
+        // shoulder and it reads from outside the arm, not mirrored. 5 cm tall
+        // along the arm (st 0.25-0.45 of 0.251 m) and 1.8 rad around it: tuned
+        // on renders of the hanging arm until it kept the icon's 512:456 look.
+        vec2 suv = vec2(0.5 - sd * ang / 1.8, (0.45 - st) / 0.2);
+        float inS = step(0.0, suv.x) * step(suv.x, 1.0) * step(0.0, suv.y) * step(suv.y, 1.0) * step(0.0, sr.y) * shirtOnly;
+        vec4 ic = texture2D(uIcon, clamp(suv, 0.0, 1.0));
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92), inS * ic.a);
+      }
+      #endif
+      float glow = thighGlow(vWorldPos, uAxis[0], uAxis[1], uQuadDir[0], uHamDir[0], 1.0, uAct[0], uAct[1])
+                 + thighGlow(vWorldPos, uAxis[2], uAxis[3], uQuadDir[1], uHamDir[1], -1.0, uAct[2], uAct[3]);
+      glow = clamp(glow, 0.0, 1.0);
+      #ifdef DEBUG_WP
+      glow = step(0.6, vWorldPos.y);
+      #endif
+      // Tint the skin itself, so the glow survives on the brightly lit side too.
+      diffuseColor.rgb = mix(diffuseColor.rgb, uLime * 0.85, glow * 0.8);
+      // Electrodes: a 5 x 7.5 cm rounded pad with a white snap, one pair per
+      // muscle, joined by a short lead. Painted in rest space, so they bend
+      // with the skin and can never sink into it or float above it.
+      float pad = 0.0, snap = 0.0, lead = 0.0;
+      for (int i = 0; i < 8; i++) {
+        vec3 d = vBind - uPadC[i];
+        if (abs(dot(d, uPadN[i])) > 0.035) continue;
+        vec3 w = normalize(cross(uPadU[i], uPadN[i]));
+        vec2 q = vec2(dot(d, w), dot(d, uPadU[i]));
+        vec2 e = abs(q) - vec2(0.017, 0.0295);
+        float sd = length(max(e, 0.0)) + min(max(e.x, e.y), 0.0) - 0.008;
+        pad = max(pad, 1.0 - smoothstep(-0.0012, 0.0012, sd));
+        snap = max(snap, 1.0 - smoothstep(0.0072, 0.0088, length(q)));
+      }
+      for (int k = 0; k < 4; k++) {
+        vec3 a = uPadC[k * 2], b = uPadC[k * 2 + 1];
+        vec3 n = normalize(uPadN[k * 2] + uPadN[k * 2 + 1]);
+        vec3 ba = b - a;
+        vec3 d = vBind - (a + ba * clamp(dot(vBind - a, ba) / dot(ba, ba), 0.0, 1.0));
+        float dn = dot(d, n);
+        if (abs(dn) > 0.035) continue;
+        lead = max(lead, 1.0 - smoothstep(0.0016, 0.0028, length(d - n * dn)));
+      }
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.13, 0.15, 0.145), lead * (1.0 - pad));
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.05, 0.065, 0.06), pad);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.9, 0.92, 0.91), snap * pad);
+      #ifdef EEG
+      // EEG, as on the real setup: a black elastic band at the hairline that
+      // dips toward the nape at the back, and two white square pads on the
+      // forehead just below it, each with a dark snap. Offsets are measured on
+      // this model: brows end ~14 cm above the head bone, the crown ~22.5 cm.
+      vec3 hd = vBind - uHead;
+      float bandC = 0.16 + 0.025 * clamp(hd.z / 0.09, -1.0, 1.0);
+      float band = step(0.05, hd.y) * (1.0 - smoothstep(0.0085, 0.0105, abs(hd.y - bandC)));
+      float epad = 0.0, esnap = 0.0;
+      for (int i = 0; i < 2; i++) {
+        vec2 q = vec2(hd.x - (i == 0 ? 0.026 : -0.026), hd.y - 0.162);
+        vec2 e = abs(q) - vec2(0.0095);
+        float sd = length(max(e, 0.0)) + min(max(e.x, e.y), 0.0) - 0.0045;
+        float front = step(0.05, hd.z);
+        epad = max(epad, front * (1.0 - smoothstep(-0.0008, 0.0008, sd)));
+        esnap = max(esnap, front * (1.0 - smoothstep(0.0042, 0.0056, length(q))));
+      }
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.06, 0.07, 0.068), band);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.94, 0.94), epad);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.08, 0.09, 0.09), esnap * epad);
+      #endif`)
+    .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      totalEmissiveRadiance += uLime * glow * 0.35 * (1.0 - pad);`);
+};
+const frameMat = new THREE.MeshStandardMaterial({ color: 0x55605c, roughness: 0.45, metalness: 0.6 });
+const darkMat = new THREE.MeshStandardMaterial({ color: 0x161c1a, roughness: 0.85 });
+const fabric = new THREE.MeshStandardMaterial({ color: 0x1a201e, roughness: 0.95 });
+const shadowy = (m) => { m.castShadow = true; m.receiveShadow = true; return m; };
+const tube = (points, r, mat = frameMat) => shadowy(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 48, r, 10, false), mat));
+
+// ---------- trike (two front wheels, one rear) ----------
+const trike = new THREE.Group();
+scene.add(trike);
+const wheels = [];
+function wheel(r, pos) {
+  const outer = new THREE.Group();
+  outer.position.copy(pos);
+  outer.rotation.y = Math.PI / 2;
+  const spin = new THREE.Group();
+  outer.add(spin);
+  spin.add(shadowy(new THREE.Mesh(new THREE.TorusGeometry(r, 0.022, 12, 64), darkMat)));
+  spin.add(new THREE.Mesh(new THREE.TorusGeometry(r - 0.024, 0.006, 8, 64), frameMat));
+  const pts = [];
+  for (let i = 0; i < 18; i++) {
+    const a = (i / 18) * Math.PI * 2;
+    pts.push(0, 0, 0, Math.cos(a) * (r - 0.03), Math.sin(a) * (r - 0.03), 0);
+  }
+  const sg = new THREE.BufferGeometry();
+  sg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  spin.add(new THREE.LineSegments(sg, new THREE.LineBasicMaterial({ color: 0x6f7b77, transparent: true, opacity: 0.5 })));
+  trike.add(outer);
+  wheels.push({ spin, r });
+}
+wheel(0.3, V(0, 0.3, -0.84));
+wheel(0.25, V(0.42, 0.25, 0.34));
+wheel(0.25, V(-0.42, 0.25, 0.34));
+
+const C = V(0, 0.44, 0.76);  // crank centre
+const R = 0.16;              // crank length
+trike.add(tube([V(0, 0.3, -0.84), V(0, 0.27, -0.42), V(0, 0.27, -0.05), V(0, 0.3, 0.34), C], 0.024));
+trike.add(tube([V(-0.42, 0.25, 0.34), V(-0.2, 0.29, 0.34), V(0.2, 0.29, 0.34), V(0.42, 0.25, 0.34)], 0.018));
+for (const sx of [1, -1]) {
+  trike.add(tube([V(sx * 0.16, 0.74, -0.5), V(sx * 0.1, 0.52, -0.68), V(sx * 0.03, 0.3, -0.84)], 0.012));
+  trike.add(tube([V(sx * 0.14, 0.29, 0.34), V(sx * 0.26, 0.34, 0.12), V(sx * 0.27, 0.44, 0.06)], 0.012));
+  const grip = shadowy(new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.1, 12), darkMat));
+  grip.position.set(sx * 0.27, 0.46, 0.06);
+  trike.add(grip);
+}
+const REC = THREE.MathUtils.degToRad(38);
+const pan = shadowy(new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.03, 0.34), fabric));
+pan.position.set(0, 0.33, -0.02);
+pan.rotation.x = -0.12;
+trike.add(pan);
+const seatBack = shadowy(new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, 0.62), fabric));
+seatBack.position.set(0, 0.56, -0.33);
+seatBack.rotation.x = Math.PI / 2 - REC;
+trike.add(seatBack);
+trike.add(tube([V(0, 0.28, -0.16), V(0, 0.34, -0.3), V(0, 0.52, -0.46)], 0.014));
+
+const stim = shadowy(new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.15, 0.12), new THREE.MeshStandardMaterial({ color: 0xa9b2af, roughness: 0.6, metalness: 0.05 })));
+stim.position.set(0.2, 0.6, -0.5);
+stim.rotation.set(-0.15, 0.25, 0);
+trike.add(stim);
+const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.11, 0.06), new THREE.MeshStandardMaterial({ color: 0x0c1110, roughness: 0.3 }));
+screen.position.set(-0.04, 0.02, 0.061);
+stim.add(screen);
+const led = new THREE.Mesh(new THREE.CircleGeometry(0.008, 16), new THREE.MeshBasicMaterial({ color: 0xcedc00 }));
+led.position.set(0.08, 0.035, 0.061);
+stim.add(led);
+trike.add(tube([V(0.12, 0.56, -0.44), V(0.16, 0.57, -0.47), V(0.2, 0.58, -0.49)], 0.01));
+
+const crank = new THREE.Group();
+crank.position.copy(C);
+trike.add(crank);
+const ring = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.007, 8, 48), frameMat);
+ring.rotation.y = Math.PI / 2;
+ring.position.x = -0.05;
+crank.add(ring);
+const pedals = [];
+for (const sx of [1, -1]) {
+  const arm = shadowy(new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.03, R), frameMat));
+  arm.position.set(sx * 0.075, 0, sx * R / 2);
+  crank.add(arm);
+  const p = shadowy(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.018, 0.07), darkMat));
+  p.position.set(sx * 0.12, 0, sx * R);
+  crank.add(p);
+  pedals.push(p);
+}
+// The sensor: a small housing on the frame, next to the crank.
+const sensor = shadowy(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.03, 20), new THREE.MeshStandardMaterial({ color: 0x28302d, roughness: 0.5 })));
+sensor.rotation.z = Math.PI / 2;
+sensor.position.copy(C).add(V(0.045, 0, 0));
+trike.add(sensor);
+const chainGeo = new THREE.BufferGeometry().setFromPoints([C.clone().add(V(-0.05, 0.1, 0)), V(-0.05, 0.34, -0.84), C.clone().add(V(-0.05, -0.1, 0)), V(-0.05, 0.26, -0.84)]);
+trike.add(new THREE.LineSegments(chainGeo, new THREE.LineBasicMaterial({ color: 0x3a4541 })));
+
+// ---------- rider ----------
+const loader = new GLTFLoader();
+const gltf = await loader.loadAsync('modelo/humano.glb').catch(() => null);
+if (!gltf) { NDAnim.falhou(); throw new Error('model'); }
+const model = gltf.scene;
+model.traverse((o) => {
+  if (o.isMesh) { o.material = clay; o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; }
+});
+scene.add(model);
+// Works with Mixamo rigs and with Unreal-style rigs (pelvis, thigh_l, calf_l…).
+const UE = {
+  Hips: 'pelvis', Spine: 'spine_01', Spine1: 'spine_02', Spine2: 'spine_03', Neck: 'neck_01', Head: 'Head',
+  LeftArm: 'upperarm_l', LeftForeArm: 'lowerarm_l', LeftHand: 'hand_l',
+  RightArm: 'upperarm_r', RightForeArm: 'lowerarm_r', RightHand: 'hand_r',
+  LeftUpLeg: 'thigh_l', LeftLeg: 'calf_l', LeftFoot: 'foot_l', LeftToeBase: 'ball_l',
+  RightUpLeg: 'thigh_r', RightLeg: 'calf_r', RightFoot: 'foot_r', RightToeBase: 'ball_r',
+};
+let prefix = '';
+let unreal = false;
+model.traverse((o) => {
+  if (o.isBone && /Hips$/.test(o.name)) prefix = o.name.replace(/Hips$/, '');
+  if (o.isBone && o.name === 'pelvis') unreal = true;
+});
+const B = {};
+for (const n of ['Hips', 'Spine', 'Spine1', 'Spine2', 'Neck', 'Head', 'HeadTop_End',
+  'LeftArm', 'LeftForeArm', 'LeftHand', 'RightArm', 'RightForeArm', 'RightHand',
+  'LeftUpLeg', 'LeftLeg', 'LeftFoot', 'LeftToeBase', 'RightUpLeg', 'RightLeg', 'RightFoot', 'RightToeBase']) {
+  B[n] = model.getObjectByName(unreal ? UE[n] : prefix + n);
+}
+const rest = [];
+model.traverse((o) => { if (o.isBone) rest.push([o, o.quaternion.clone()]); });
+const wp = (o) => o.getWorldPosition(new THREE.Vector3());
+const len = (a, b) => wp(a).distanceTo(wp(b));
+// The trike was sized for a 0.889 m hip-to-ankle leg; scale the rider to it.
+model.updateMatrixWorld(true);
+model.scale.setScalar(0.889 / (len(B.LeftUpLeg, B.LeftLeg) + len(B.LeftLeg, B.LeftFoot)));
+model.updateMatrixWorld(true);
+model.position.copy(V(0, 0.4, 0).sub(wp(B.Hips)));
+model.updateMatrixWorld(true);
+const HIP = wp(B.LeftUpLeg);
+if (params.has('measure')) {
+  // Rest pose: where is the head bone relative to the forehead skin?
+  const hb = wp(B.Head), nb = wp(B.Neck);
+  let body = null;
+  model.traverse((o) => { if (o.isSkinnedMesh && (!body || o.geometry.attributes.position.count > body.geometry.attributes.position.count)) body = o; });
+  const pos = body.geometry.attributes.position, v = new THREE.Vector3();
+  const rows = {};
+  for (let k = 0; k < pos.count; k++) {
+    v.fromBufferAttribute(pos, k); body.applyBoneTransform(k, v); v.applyMatrix4(body.matrixWorld);
+    const dy = v.y - hb.y;
+    if (dy < -0.05) continue;
+    const key = (Math.round(dy * 50) / 50).toFixed(2);
+    const r = rows[key] || (rows[key] = { zmin: 9, zmax: -9, xmax: -9 });
+    r.zmin = Math.min(r.zmin, v.z - hb.z); r.zmax = Math.max(r.zmax, v.z - hb.z); r.xmax = Math.max(r.xmax, Math.abs(v.x - hb.x));
+  }
+  console.log('HEAD', JSON.stringify({ hb: hb.toArray().map((x) => +x.toFixed(3)), up: hb.clone().sub(nb).normalize().toArray().map((x) => +x.toFixed(2)) }));
+  for (const k of Object.keys(rows).sort((a, b) => a - b)) console.log('ROW', k, rows[k].zmin.toFixed(3), rows[k].zmax.toFixed(3), rows[k].xmax.toFixed(3));
+}
+const LEN = {
+  thigh: len(B.LeftUpLeg, B.LeftLeg), shin: len(B.LeftLeg, B.LeftFoot),
+  upper: len(B.LeftArm, B.LeftForeArm), fore: len(B.LeftForeArm, B.LeftHand),
+};
+
+// ---------- activation model ----------
+// One pedal turn every PERIOD seconds, pedalling forward (theta decreases).
+const PERIOD = 4.5;
+const pedalPos = (theta, sx) => V(sx * 0.12, C.y + R * Math.sin(theta), C.z + R * Math.cos(theta));
+const ankleOf = (P) => P.clone().add(V(0, 0.055, -0.09));
+const legDist = (theta) => ankleOf(pedalPos(theta, 1)).distanceTo(HIP);
+const thetaAt = (t) => Math.PI / 2 - (t / PERIOD) * Math.PI * 2;
+// The front of the thigh fires while the leg extends, the back while it bends,
+// slightly ahead of the movement as a real controller must.
+const LEAD = 0.35, EPS = 0.01;
+const rateAt = (t) => (legDist(thetaAt(t + LEAD + EPS)) - legDist(thetaAt(t + LEAD - EPS))) / (2 * EPS);
+let MAXR = 0;
+for (let i = 0; i < 200; i++) MAXR = Math.max(MAXR, Math.abs(rateAt((i / 200) * PERIOD)));
+const ramp = (v) => { v = Math.min(1, Math.max(0, (v - 0.15) / 0.5)); return v * v * (3 - 2 * v); };
+const activation = (t) => { const v = rateAt(t) / MAXR; return { q: ramp(v), h: ramp(-v) }; };
+
+// ---------- posing ----------
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _q = new THREE.Quaternion(), _qw = new THREE.Quaternion(), _qp = new THREE.Quaternion();
+// Rotate bone `b` so its child points along world direction `dir`.
+function aim(b, child, dir) {
+  b.getWorldPosition(_a);
+  child.getWorldPosition(_b);
+  _q.setFromUnitVectors(_b.sub(_a).normalize(), dir.clone().normalize());
+  b.getWorldQuaternion(_qw).premultiply(_q);
+  b.parent.getWorldQuaternion(_qp);
+  b.quaternion.copy(_qp.invert().multiply(_qw));
+  b.updateMatrixWorld(true);
+}
+// Two-bone IK: place the middle joint toward `pole`, then aim both segments.
+function ik(root, mid, end, T, pole, L1, L2) {
+  const A = wp(root);
+  const dv = T.clone().sub(A);
+  const d = Math.min(Math.max(dv.length(), 0.05), L1 + L2 - 1e-3);
+  const u = dv.normalize();
+  const a = (L1 * L1 - L2 * L2 + d * d) / (2 * d);
+  const h = Math.sqrt(Math.max(0, L1 * L1 - a * a));
+  const p = pole.clone().sub(u.clone().multiplyScalar(pole.dot(u))).normalize();
+  const joint = A.clone().addScaledVector(u, a).addScaledVector(p, h);
+  aim(root, mid, joint.clone().sub(A));
+  aim(mid, end, A.clone().addScaledVector(u, d).sub(wp(mid)));
+}
+function pose(theta) {
+  for (const [b, q] of rest) b.quaternion.copy(q);
+  model.updateMatrixWorld(true);
+  const backDir = V(0, Math.cos(REC), -Math.sin(REC));
+  aim(B.Spine, B.Spine1, backDir);
+  aim(B.Spine1, B.Spine2, backDir);
+  aim(B.Spine2, B.Neck, V(0, Math.cos(REC * 0.8), -Math.sin(REC * 0.8)));
+  aim(B.Neck, B.Head, V(0, 1, -0.05));
+  if (B.HeadTop_End) aim(B.Head, B.HeadTop_End, V(0, 1, 0.3));
+  for (const [s, sx] of [['Left', 1], ['Right', -1]]) {
+    ik(B[s + 'Arm'], B[s + 'ForeArm'], B[s + 'Hand'], V(sx * 0.27, 0.47, 0.04), V(sx * 0.7, -0.3, -0.6), LEN.upper, LEN.fore);
+  }
+  for (const [s, sx, off] of [['Left', 1, 0], ['Right', -1, Math.PI]]) {
+    const P = pedalPos(theta + off, sx);
+    const ankle = ankleOf(P);
+    ik(B[s + 'UpLeg'], B[s + 'Leg'], B[s + 'Foot'], ankle, V(sx * 0.2, 1, 0.1), LEN.thigh, LEN.shin);
+    aim(B[s + 'Foot'], B[s + 'ToeBase'], P.clone().sub(ankle).add(V(0, 0.03, 0.02)));
+  }
+}
+
+// ---------- electrodes and cables ----------
+// The skin shader paints the electrodes (see uPadC/uPadU/uPadN); here we only
+// decide, once and in the rest pose, where each one goes. Every pad is centred
+// on a real skin vertex, so its cable can end exactly on the snap every frame.
+let bodyMesh = null;
+model.traverse((o) => {
+  if (o.isSkinnedMesh && (!bodyMesh || o.geometry.attributes.position.count > bodyMesh.geometry.attributes.position.count)) bodyMesh = o;
+});
+const bodyPos = bodyMesh.geometry.attributes.position;
+// World position of a skin vertex in the current pose.
+function skinPoint(i, out) {
+  out.fromBufferAttribute(bodyPos, i);
+  bodyMesh.applyBoneTransform(i, out);
+  return out.applyMatrix4(bodyMesh.matrixWorld);
+}
+// Pad layout: fraction of the way from hip to knee, and how far the pad turns
+// from the outer side toward the front (+) or the back (-). All of them sit
+// below the shorts, on the side of the thigh the camera sees.
+const PADS = [
+  { f: 0.6, turn: 0.8 }, { f: 0.82, turn: 0.8 },     // quadriceps pair
+  { f: 0.62, turn: -0.8 }, { f: 0.84, turn: -0.8 },  // hamstrings pair
+];
+function layoutPads(side, sx) {
+  // Still in the rest pose here, so world -> mesh space gives rest (bind) space.
+  const A = bodyMesh.worldToLocal(wp(B[side + 'UpLeg'])), K = bodyMesh.worldToLocal(wp(B[side + 'Leg']));
+  const u = K.clone().sub(A), L2 = u.lengthSq();
+  const axis = u.clone().normalize();
+  const flat = (v) => v.addScaledVector(axis, -v.dot(axis)).normalize();
+  const out = flat(V(sx, 0, 0)), front = flat(V(0, 0, 1));
+  const p = new THREE.Vector3(), radial = new THREE.Vector3();
+  return PADS.map(({ f, turn }) => {
+    const dir = out.clone().addScaledVector(front, turn).normalize();
+    let best = -1, bestScore = -Infinity;
+    for (let i = 0; i < bodyPos.count; i++) {
+      p.fromBufferAttribute(bodyPos, i);
+      const t = p.clone().sub(A).dot(u) / L2;
+      if (Math.abs(t - f) > 0.05) continue;
+      radial.copy(p).sub(A).addScaledVector(u, -t);
+      const r = radial.length();
+      if (r < 0.03 || r > 0.14) continue;
+      // Facing the right way matters most, then being at the right height.
+      const score = (radial.dot(dir) / r) * 10 - Math.abs(t - f) * 20 + r;
+      if (score > bestScore) { bestScore = score; best = i; }
+    }
+    const c = new THREE.Vector3().fromBufferAttribute(bodyPos, best);
+    const n = c.clone().sub(A).addScaledVector(u, -c.clone().sub(A).dot(u) / L2).normalize();
+    return { vertex: best, c, u: axis.clone(), n };
+  });
+}
+const padLayout = [['Left', 1], ['Right', -1]].map(([s, sx]) => layoutPads(s, sx));
+padLayout.flat().forEach((pad, i) => {
+  muscleGlow.uPadC.value[i].copy(pad.c);
+  muscleGlow.uPadU.value[i].copy(pad.u);
+  muscleGlow.uPadN.value[i].copy(pad.n);
+});
+const CABLE_SAMPLES = 120;
+const line = (color = 0x7d8986) => {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(CABLE_SAMPLES * 3), 3));
+  const l = new THREE.Line(g, new THREE.LineBasicMaterial({ color }));
+  scene.add(l);
+  return l;
+};
+const legs = [['Left', 1], ['Right', -1]].map(([s, sx], li) => ({
+  s, sx, pads: padLayout[li], cableQ: line(), cableH: line(),
+}));
+
+// ---------- EEG: band and forehead pads (painted), and their leads ----------
+// Still the rest pose here. The band and pads are painted by the skin shader
+// relative to the head bone. Each lead leaves its snap and lies along the
+// scalp, over the band and the crown, down the back of the head: its path is a
+// chain of real skin vertices, so it follows the skull exactly.
+const headBind = bodyMesh.worldToLocal(wp(B.Head));
+muscleGlow.uHead.value.copy(headBind);
+const SKULL_C = V(0, 0.13, 0.005);   // rough skull centre, from the head bone
+const eeg = (EEG ? [0.026, -0.026] : []).map((xc) => {
+  const p = new THREE.Vector3();
+  // The skin vertex under the snap: right height, right side, frontmost.
+  let vertex = -1, bestZ = -Infinity;
+  for (let i = 0; i < bodyPos.count; i++) {
+    p.fromBufferAttribute(bodyPos, i).sub(headBind);
+    if (Math.abs(p.x - xc) > 0.007 || Math.abs(p.y - 0.162) > 0.007) continue;
+    if (p.z > bestZ) { bestZ = p.z; vertex = i; }
+  }
+  // Path vertices: for each angle around the skull (from the forehead, over
+  // the crown, to the nape), the scalp vertex closest to that direction.
+  const x = xc * 0.8;
+  // The snap itself sits at ~20°, so the path starts a little above it.
+  const path = [42, 66, 90, 115, 140, 165, 195, 225].map((deg) => {
+    const a = THREE.MathUtils.degToRad(deg);
+    const dir = V(0, Math.sin(a), Math.cos(a));
+    let best = -1, bestDot = -Infinity;
+    for (let i = 0; i < bodyPos.count; i++) {
+      p.fromBufferAttribute(bodyPos, i).sub(headBind);
+      if (Math.abs(p.x - x) > 0.008 || p.y < -0.04) continue;
+      const d = p.sub(SKULL_C).normalize().dot(dir);
+      if (d > bestDot) { bestDot = d; best = i; }
+    }
+    return best;
+  });
+  return { vertex, path, cable: line() };
+});
+const skullWorld = () => {
+  // Skull centre in the current pose, from the head bone's own transform.
+  const m = B.Head.matrixWorld.clone().multiply(headRestInvM);
+  return bodyMesh.localToWorld(headBind.clone().add(SKULL_C)).applyMatrix4(m);
+};
+const headRestInvM = B.Head.matrixWorld.clone().invert();
+const sensorCable = line();
+
+const up = V(0, 1, 0);
+function thighFrame(A, K) {
+  const t = K.clone().sub(A).normalize();
+  const n = up.clone().sub(t.clone().multiplyScalar(up.dot(t))).normalize();
+  const s = new THREE.Vector3().crossVectors(t, n).normalize();
+  return { t, n, s };
+}
+// Cables follow waypoints that keep them outside the body: along the frame,
+// beside the seat, behind the seat back. A straight run would cut through
+// the hips, the hands or the seat.
+function route(cable, points) {
+  const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
+  const pos = cable.geometry.attributes.position;
+  for (let i = 0; i < CABLE_SAMPLES; i++) { const p = curve.getPoint(i / (CABLE_SAMPLES - 1)); pos.setXYZ(i, p.x, p.y, p.z); }
+  pos.needsUpdate = true;
+}
+// Where a pad's snap is right now, lifted just off the skin.
+function snapWorld(pad, A, K) {
+  const s = skinPoint(pad.vertex, new THREE.Vector3());
+  const ba = K.clone().sub(A);
+  const n = s.clone().sub(A).addScaledVector(ba, -s.clone().sub(A).dot(ba) / ba.lengthSq()).normalize();
+  return { s: s.addScaledVector(n, 0.004), n };
+}
+const port = (sx, k) => stim.localToWorld(V(sx * (k === 'q' ? 0.02 : 0.05), -0.07, 0.03));
+const grey = new THREE.Color(0x7d8986), lime = new THREE.Color(0xcedc00);
+
+const anchors = { band: new THREE.Vector3(), sensor: new THREE.Vector3(), stim: new THREE.Vector3(), pad: new THREE.Vector3() };
+
+function update(time) {
+  const theta = thetaAt(time);
+  pose(theta);
+  crank.rotation.x = -theta;
+  for (const p of pedals) p.rotation.x = theta;
+  for (const w of wheels) w.spin.rotation.z = (theta * 0.5) / w.r;
+
+  const act = activation(time);
+  for (const L of legs) {
+    const A = wp(B[L.s + 'UpLeg']), K = wp(B[L.s + 'Leg']);
+    const fr = thighFrame(A, K);
+    // Front of the thigh (quadriceps) and back (hamstrings), as segments inside it.
+    const a = L.sx === 1 ? act : activation(time + PERIOD / 2);
+    const i = L.sx === 1 ? 0 : 2;
+    muscleGlow.uAxis.value[i].copy(A);
+    muscleGlow.uAxis.value[i + 1].copy(K);
+    // Quadriceps wrap the front and outer side of the thigh (vastus lateralis),
+    // hamstrings the back and a little outward (biceps femoris).
+    const out = fr.s.clone().multiplyScalar(Math.sign(fr.s.x * L.sx) || 1);
+    muscleGlow.uQuadDir.value[i / 2].copy(fr.n).addScaledVector(out, 0.9).normalize();
+    muscleGlow.uHamDir.value[i / 2].copy(fr.n).negate().addScaledVector(out, 0.6).normalize();
+    // Each muscle's cable: device -> (behind the seat, for the far leg) -> beside
+    // the seat, below the elbow -> outside the thigh -> onto the upper pad's snap.
+    // The short lead to the lower pad is painted on the skin.
+    [[L.cableQ, L.pads[0], 'q'], [L.cableH, L.pads[2], 'h']].forEach(([cable, pad, k]) => {
+      const { s: snapPos, n } = snapWorld(pad, A, K);
+      const pts = [port(L.sx, k)];
+      if (L.sx === -1) pts.push(V(0, 0.42, -0.62));
+      pts.push(V(L.sx * 0.25, 0.35, -0.2));
+      pts.push(A.clone().lerp(K, 0.35).addScaledVector(out, 0.15));
+      pts.push(snapPos.clone().addScaledVector(n, 0.03), snapPos);
+      route(cable, pts);
+      if (L.sx === 1 && k === 'q') anchors.pad.copy(snapPos);
+    });
+    muscleGlow.uAct.value[i] = params.has('all') ? (params.get('all') === 'h' ? 0 : 1) : a.q;
+    muscleGlow.uAct.value[i + 1] = params.has('all') ? (params.get('all') === 'q' ? 0 : 1) : a.h;
+    L.cableQ.material.color.copy(grey).lerp(lime, a.q * 0.8);
+    L.cableH.material.color.copy(grey).lerp(lime, a.h * 0.8);
+  }
+  // EEG leads: snap, then along the scalp 4 mm off the skin, then to the device.
+  const skull = skullWorld();
+  const lift = (v) => v.addScaledVector(v.clone().sub(skull).normalize(), 0.004);
+  eeg.forEach((e, k) => {
+    const snapPos = lift(skinPoint(e.vertex, new THREE.Vector3()));
+    const pts = e.path.map((i) => lift(skinPoint(i, new THREE.Vector3())));
+    route(e.cable, [snapPos, ...pts, V(0.1, 0.8, -0.56), V(0.14, 0.72, -0.58), stim.localToWorld(V(-0.06 + k * 0.02, 0.075, 0))]);
+    if (k === 0) anchors.band.copy(snapPos);
+  });
+
+  // Sensor lead: along the frame under the seat, then up to the device.
+  sensor.getWorldPosition(anchors.sensor).add(V(0.02, 0, 0));
+  route(sensorCable, [anchors.sensor, V(0.07, 0.31, 0.45), V(0.07, 0.29, 0), V(0.12, 0.3, -0.35), stim.localToWorld(V(0.06, -0.075, 0))]);
+  stim.getWorldPosition(anchors.stim).add(V(0.02, 0.08, 0));
+}
+
+// ---------- camera: nearly still, a slow breath in and out ----------
+function placeCamera(time) {
+  const aspect = stage.clientWidth / stage.clientHeight;
+  const narrow = aspect < 1;
+  const phi = THREE.MathUtils.degToRad(params.has('phi') ? +params.get('phi') : (narrow ? 40 : 58) + 4 * Math.sin((time / 40) * Math.PI * 2));
+  const el = THREE.MathUtils.degToRad(14);
+  const dist = params.has('d') ? +params.get('d') : (narrow ? 3.6 : 3.0) + 0.15 * Math.sin((time / 30) * Math.PI * 2);
+  // ?head frames the head, for checking the EEG band up close.
+  const aim = params.has('head') ? wp(B.Head).add(V(0, 0.1, 0.04)) : target;
+  camera.position.set(
+    aim.x + dist * Math.sin(phi) * Math.cos(el),
+    aim.y + dist * Math.sin(el),
+    aim.z + dist * Math.cos(phi) * Math.cos(el),
+  );
+  camera.lookAt(aim);
+}
+
+// The renderer's own antialias only applies when drawing straight to the
+// canvas; the bloom composer draws into its own targets, so they need MSAA.
+const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }));
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), 0.35, 0.4, 1.0));
+composer.addPass(new OutputPass());
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  composer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+
+// ---------- labels: written once, then still ----------
+// Slots are fractions of the stage; `right` hangs the label from its right edge.
+// Order matches TEXT.tags: head, thigh, pedal, device.
+const TAGS_TODOS = [
+  { key: 'band', wide: [0.96, 0.05, 'right'], narrow: [0.95, 0.03, 'right'] },
+  { key: 'pad', wide: [0.04, 0.08, 'left'], narrow: [0.05, 0.1, 'left'] },
+  { key: 'sensor', wide: [0.04, 0.74, 'left'], narrow: [0.05, 0.95, 'left'] },
+  { key: 'stim', wide: [0.96, 0.72, 'right'], narrow: [0.95, 0.89, 'right'] },
+];
+const TAGS = EEG ? TAGS_TODOS : TAGS_TODOS.filter((t) => t.key !== 'band');
+if (!EEG) Object.assign(TAGS.find((t) => t.key === 'stim'), { wide: [0.96, 0.08, 'right'], narrow: [0.95, 0.04, 'right'] });
+const svg = $('leaders');
+const NS = 'http://www.w3.org/2000/svg';
+for (const tg of TAGS) {
+  tg.el = document.createElement('div');
+  tg.el.className = 'tag';
+  tg.el.innerHTML = '<b></b><span></span>';
+  tg.num = String(TAGS.indexOf(tg) + 1).padStart(2, '0');
+  $('tags').appendChild(tg.el);
+  tg.line = document.createElementNS(NS, 'polyline');
+  tg.line.setAttribute('class', 'leader');
+  svg.appendChild(tg.line);
+  tg.dot = document.createElementNS(NS, 'circle');
+  tg.dot.setAttribute('r', 2.5);
+  tg.dot.setAttribute('class', 'anchor');
+  svg.appendChild(tg.dot);
+  tg.shown = -1;
+}
+// The head is too small in the wide shot to show the EEG, so its label carries
+// a close-up box, tied to the head by a ring and two lines, like a magnifier.
+const headTag = EEG ? TAGS[0] : {};
+if (EEG) {
+headTag.zoom = document.createElement('div');
+headTag.zoom.className = 'tag__zoom';
+headTag.zoom.innerHTML = '<em></em>';
+headTag.el.appendChild(headTag.zoom);
+headTag.ring = document.createElementNS(NS, 'circle');
+headTag.ring.setAttribute('class', 'zoom-ring');
+headTag.ring.setAttribute('r', 24);
+headTag.lines = document.createElementNS(NS, 'path');
+headTag.lines.setAttribute('class', 'zoom-lines');
+svg.append(headTag.ring, headTag.lines);
+}
+let zoomRect = null;
+let revealStart = null;
+const CHARS_PER_SEC = 34, GAP = 0.9;
+
+function drawTags() {
+  const T = TEXT[lang];
+  const w = stage.clientWidth, h = stage.clientHeight;
+  const narrow = w < 760;
+  const since = revealStart === null ? -1 : (performance.now() - revealStart) / 1000;
+  let offset = 0;
+  TAGS.forEach((tg, i) => {
+    const [title, sub] = T.tags[tg.key];
+    // Each title types itself after the previous label is complete; its body
+    // then fades in whole, since typing 120 characters would take too long.
+    const n = reduced ? title.length : Math.max(0, Math.min(title.length, Math.floor((since - offset) * CHARS_PER_SEC)));
+    offset += title.length / CHARS_PER_SEC + GAP;
+    if (n !== tg.shown || tg.lang !== lang) {
+      tg.el.firstChild.innerHTML = n > 0 ? `<i>${tg.num}</i>` : '';
+      tg.el.firstChild.append(title.slice(0, n));
+      tg.el.querySelector('span').textContent = sub;
+      if (tg.zoom) tg.zoom.firstChild.textContent = T.detail;
+      tg.el.classList.toggle('is-done', n === title.length);
+      tg.shown = n;
+      tg.lang = lang;
+    }
+    const on = n > 0 ? 1 : 0;
+    tg.line.style.opacity = on;
+    tg.dot.style.opacity = on;
+
+    const p = anchors[tg.key].clone().project(camera);
+    const x = (p.x * 0.5 + 0.5) * w, y = (-p.y * 0.5 + 0.5) * h;
+    const [fx, fy, edge] = narrow ? tg.narrow : tg.wide;
+    const tw = Math.max(tg.el.offsetWidth, 1), th = tg.el.offsetHeight;
+    const left = edge === 'left' ? fx * w : fx * w - tw;
+    const top = fy * h;
+    tg.el.style.transform = `translate(${left}px, ${top}px)`;
+    // JN-style leader: from the part to the label, then an underline beneath it.
+    const above = y < top;
+    const baseY = above ? top - 6 : top + th + 6;
+    const nearX = Math.abs(x - left) < Math.abs(x - (left + tw)) ? left : left + tw;
+    const farX = nearX === left ? left + tw : left;
+    tg.line.setAttribute('points', `${x},${y} ${nearX},${baseY} ${farX},${baseY}`);
+    tg.dot.setAttribute('cx', x);
+    tg.dot.setAttribute('cy', y);
+
+    if (tg.zoom) {
+      // Magnifier: a ring on the head, two lines to the box's near corners.
+      const zoomOn = !narrow && tg.el.classList.contains('is-done');
+      tg.line.style.opacity = narrow ? on : 0;
+      tg.dot.style.opacity = narrow ? on : 0;
+      tg.ring.style.opacity = tg.lines.style.opacity = zoomOn ? 1 : 0;
+      zoomRect = null;
+      if (zoomOn) {
+        const zx = left + tg.zoom.offsetLeft, zy = top + tg.zoom.offsetTop;
+        const zw = tg.zoom.offsetWidth, zh = tg.zoom.offsetHeight;
+        zoomRect = { x: zx, y: zy, w: zw, h: zh };
+        const R = 24, cx = zx < x ? zx + zw : zx;
+        const edge = (tx, ty) => {
+          const d = Math.hypot(tx - x, ty - y) || 1;
+          return `${x + ((tx - x) / d) * R},${y + ((ty - y) / d) * R}`;
+        };
+        tg.ring.setAttribute('cx', x);
+        tg.ring.setAttribute('cy', y);
+        tg.lines.setAttribute('d', `M${edge(cx, zy)} L${cx},${zy} M${edge(cx, zy + zh)} L${cx},${zy + zh}`);
+      }
+    }
+  });
+}
+
+// Second camera for the close-up: in front of the forehead, turned a little
+// toward the side the main camera sees, following the head as it moves.
+const zoomCam = new THREE.PerspectiveCamera(30, 1, 0.02, 10);
+function renderZoom() {
+  if (!zoomRect || !EEG) return;
+  const skull = skullWorld();
+  const brow = skinPoint(eeg[0].vertex, new THREE.Vector3()).lerp(skinPoint(eeg[1].vertex, new THREE.Vector3()), 0.5);
+  const fwd = brow.clone().sub(skull).normalize();
+  const side = V(1, 0, 0).addScaledVector(fwd, -fwd.x).normalize();
+  const upv = new THREE.Vector3().crossVectors(fwd, side).normalize();
+  if (upv.y < 0) upv.negate();
+  // Face level, a third of the way round to the side the main camera sees,
+  // framed on the forehead pads with the band above and the eyes below.
+  zoomCam.position.copy(brow)
+    .addScaledVector(fwd, 0.29 * Math.cos(0.5))
+    .addScaledVector(side, 0.29 * Math.sin(0.5))
+    .addScaledVector(upv, -0.06);
+  zoomCam.up.copy(upv);
+  zoomCam.lookAt(brow.clone().addScaledVector(upv, -0.012));
+  zoomCam.aspect = zoomRect.w / zoomRect.h;
+  zoomCam.updateProjectionMatrix();
+  const H = stage.clientHeight;
+  const vy = H - zoomRect.y - zoomRect.h;
+  renderer.shadowMap.autoUpdate = false;   // shadows were just drawn for this frame
+  renderer.setScissorTest(true);
+  renderer.setScissor(zoomRect.x, vy, zoomRect.w, zoomRect.h);
+  renderer.setViewport(zoomRect.x, vy, zoomRect.w, zoomRect.h);
+  renderer.render(scene, zoomCam);
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, stage.clientWidth, H);
+  renderer.shadowMap.autoUpdate = true;
+}
+
+// ---------- loop ----------
+function applyLanguage() {
+  const T = TEXT[lang];
+  document.documentElement.lang = NDAnim.rot.html;
+  document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = T[el.dataset.t]; });
+  NDAnim.botao($('toggle'), playing, T);
+  // Phones only: the full texts, numbered like the titles in the scene.
+  $('legend').innerHTML = TAGS.map((tg) => T.tags[tg.key]).map(([title, body], i) =>
+    `<li><b><i>${String(i + 1).padStart(2, '0')}</i>${title}</b><p>${body}</p></li>`).join('');
+}
+applyLanguage();
+
+let clock = 0, last = null, raf = 0, visible = true, frozen = false;
+if (params.has('t')) {
+  frozen = true;
+  clock = +params.get('t');
+  if (params.get('t') === 'q' || params.get('t') === 'h') {
+    const k = params.get('t');
+    let best = 0;
+    for (let i = 0; i < 200; i++) { const tt = (i / 200) * PERIOD; if (activation(tt)[k] > activation(best)[k]) best = tt; }
+    clock = best;
+  }
+}
+if (reduced) {
+  // Still frame at mid-push, with the front of the thigh firing.
+  let best = 0;
+  for (let i = 0; i < 200; i++) { const tt = (i / 200) * PERIOD; if (activation(tt).q > activation(best).q) best = tt; }
+  clock = best;
+}
+function frame(now) {
+  if (last !== null && playing && !frozen) clock += Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(clock);
+  placeCamera(reduced ? 0 : clock);
+  composer.render();
+  drawTags();
+  renderZoom();
+  raf = visible ? requestAnimationFrame(frame) : 0;
+}
+function start() { if (!raf) { last = null; raf = requestAnimationFrame(frame); } }
+
+$('status').remove();
+resize();
+start();
+new IntersectionObserver(([entry]) => {
+  visible = entry.isIntersecting;
+  if (visible && revealStart === null) revealStart = performance.now() + 500;
+  if (visible) start();
+}, { threshold: 0.3 }).observe(stage);
+$('toggle').addEventListener('click', () => { playing = !playing; applyLanguage(); });
+</script>
+</body>
+</html>
