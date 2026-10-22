@@ -14,11 +14,13 @@ python3 -m http.server 8766 -d . >/dev/null 2>&1 &
 # rodar
 node testes/noticias.mjs
 node testes/projetos.mjs
+node testes/navegacao.mjs
 ```
 
 | Teste           | O que cobre |
 |-----------------|-------------|
 | `noticias.mjs`  | A seção de notícias e o feed |
+| `navegacao.mjs` | As páginas principais: o trilho de projetos do início (botões, alinhamento, as primeiras imagens já carregadas), o mosaico, as fotos com e sem o arquivo, quanto texto o início tem, a troca de página por View Transition (o pôster do cartão que vira o palco, e a volta), a rolagem de volta onde se estava, o movimento reduzido, os motivos do contato e o celular. As fotos são servidas por `page.route` (um JPEG de 1 px, ou 404) |
 | `projetos.mjs`  | O índice de projetos (filtro, cartões, família) e a página de cada projeto: reserva, banco, idiomas, números com fonte, produção, slug inexistente ou inválido, celular. As animações são trocadas por uma página mínima que só avisa a altura. Com `window.__teste = { projetos:'banco' }` o stub responde com os projetos do banco |
 
 - `stub-site.js` substitui o supabase-js do CDN (`page.route('**/*supabase*.js', ...)`).

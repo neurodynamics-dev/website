@@ -15,9 +15,9 @@ vidro, fundo animado) em versão mais sóbria.
 | `index.html`   | O site (rotas por hash: `#/`, `#/about`, `#/projects`, `#/projects/<slug>`, `#/news`, `#/contact`) |
 | `anim/`        | As animações das páginas de projeto, uma por arquivo, e os pôsteres (ver [Animações](#animações)) |
 | `admin.html`   | Aviso de que a edição mudou para o portal; redireciona para `#/admin/site` do SOMA |
-| `assets/`      | Logos locais usadas no letreiro de parceiros |
+| `assets/`      | Logos locais usadas no letreiro de parceiros e, em `assets/fotos/`, as fotos das páginas principais (ver [Fotos](#fotos)) |
 | `ds/`          | Tokens e casca do design system, copiados do repositório `brand` |
-| `scripts/`     | `posteres.mjs`, que gera os pôsteres das animações |
+| `scripts/`     | `posteres.mjs`, que gera os pôsteres das animações, e `fotos.mjs`, que baixa e recorta as fotos |
 | `testes/`      | Testes no navegador, sem banco (ver `testes/LEIAME.md`) |
 | `CNAME`        | Domínio do GitHub Pages (`neurodynamics.dev`) |
 
@@ -83,8 +83,60 @@ Sem escolha prévia, o site segue o idioma do navegador e cai no inglês.
   (hoje `hello@neurodynamics.dev`).
 - **Estrutura das páginas:** funções `pageHome/pageAbout/pageProjects/pageContact`
   no `<script>` de `index.html` (elas só montam o HTML; o texto vem do bloco `L`).
+  O trilho de projetos do início é `trilhoProjetos`; cada quadro de foto,
+  `foto('<chave>', ...)`.
   A página de cada projeto é montada por `pageProjeto` e suas partes
   (`projetoTopo`, `projetoPalco`, `projetoCorpo`).
+
+## Navegação
+
+As páginas principais mostram pouco texto e mais imagem: o início abre com
+o título e, logo abaixo, o **trilho de projetos** (um cartão por projeto, com
+o pôster da animação, que desliza para o lado; o último cartão leva ao
+índice). Depois vêm o mosaico do que construímos (uma foto e uma palavra
+por frente), o propósito numa frase ao lado de uma foto, os parceiros e as
+notícias. *Quem somos* e *Contato* seguem o mesmo jeito: uma foto grande,
+três fatos, cartões curtos. Cada motivo do contato já abre o e-mail com o
+assunto preenchido.
+
+- **Troca de página:** é uma View Transition. O cabeçalho fica parado; a
+  tela como estava esmaece e a nova sobe um pouco, em 0,15 a 0,25 s, como
+  manda o guia da marca. Do cartão de um projeto (no início ou no índice) para a página
+  dele, o pôster cresce até virar o palco da animação, e na volta encolhe
+  para o cartão de onde saiu (o nome da transição é `pj-midia`).
+- **Rolagem:** voltar abre a página onde se estava (a posição fica no
+  `history.state` de cada entrada); um link novo abre no topo.
+- **Ao abrir:** o que já está na tela aparece de uma vez (a transição da
+  página cuida disso); o resto entra ao rolar, em 0,25 s.
+- **Trilhos:** no celular, o mosaico e os cartões de *Quem somos* também
+  deslizam. No computador, os botões de seta andam um cartão; a pista
+  recebe foco e anda pelas setas do teclado.
+- **Movimento reduzido** (`prefers-reduced-motion`): sem transição nem
+  animação; a página só troca. Navegador sem View Transitions também.
+
+## Fotos
+
+As fotos das páginas principais (12 quadros: o mosaico do início, o
+propósito, *Quem somos* e o contato) vêm do [Unsplash](https://unsplash.com)
+e moram em `assets/fotos/<chave>.jpg` (1600 px de largura) e
+`<chave>-800.jpg`. São ambiente, não informação: o texto alternativo fica
+vazio, e a legenda, quando há, fica fora da foto. Sem o arquivo, o quadro
+mostra a grade da marca e nada quebra.
+
+- **Escolher ou trocar:** a lista fica em `scripts/fotos.mjs`, com o id de
+  cada foto no Unsplash (o fim do endereço da página dela), a proporção do
+  quadro e o recorte. `node scripts/fotos.mjs` baixa todas (ou só as que
+  forem nomeadas), já recortadas pelo próprio servidor de imagens do
+  Unsplash, e escreve `assets/fotos/CREDITOS.md`. Precisa de rede para
+  `unsplash.com` e `images.unsplash.com`.
+- **Licença:** a do Unsplash permite uso livre, sem pedir permissão; o
+  crédito é cortesia e fica no `CREDITOS.md`. Só servem as fotos
+  gratuitas: as do **Unsplash+** (com cadeado) têm outra licença.
+- **Marca:** retangulares ou com raio de 18 px, sem filtro, sem duotone,
+  sem texto por cima.
+- **Gente:** foto de banco com pessoas não pode parecer a equipe. Em *Quem
+  somos*, a primeira escolha é foto nossa; enquanto não houver, ficam
+  fotos de processo (bancada, impressora 3D, quadro de tarefas).
 
 ## Páginas de projeto
 
