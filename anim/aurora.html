@@ -1,0 +1,366 @@
+<!doctype html>
+<!--
+  NeuroDynamics, animação da Aurora (digitalização 3D do acervo de anatomia).
+  O mesmo modelo das outras cenas, só o busto: um anel de captura desce e a
+  peça aparece em pontos; os pontos viram malha, a malha gira e uma
+  estrutura ganha anotação. Projeto em conceito: ilustrativo.
+  Parâmetros: lang=en|pt|fr, t=<s> (congela), poster=1.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurora, animação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600&family=IBM+Plex+Mono:wght@500;600&family=Instrument+Sans:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../ds/tokens.css">
+<link rel="stylesheet" href="anim.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<main class="anim" id="anim">
+  <div class="stage" id="stage">
+    <div class="stage__status" id="status"></div>
+    <div class="overlay" aria-hidden="true">
+      <svg id="leaders"></svg>
+      <div id="tags"></div>
+    </div>
+    <p class="note" data-t="note"></p>
+  </div>
+  <button class="toggle" type="button" id="toggle"></button>
+  <ol class="legend" id="legend"></ol>
+</main>
+<script src="anim.js"></script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const TEXT = {
+  pt: {
+    note: 'Simulação ilustrativa. Projeto em concepção.',
+    pause: 'Pausar a animação', play: 'Reproduzir a animação',
+    tags: {
+      captura: ['Captura', 'Fotogrametria e luz estruturada medem cada superfície da peça.'],
+      modelo: ['Modelo 3D', 'A malha é reconstruída e texturizada, e docentes conferem a fidelidade.'],
+      anotacao: ['Anotação', 'Cada estrutura de interesse ganha nome e descrição, para estudar no navegador ou no celular.'],
+    },
+  },
+  en: {
+    note: 'Illustrative simulation. Concept-stage project.',
+    pause: 'Pause the animation', play: 'Play the animation',
+    tags: {
+      captura: ['Capture', 'Photogrammetry and structured light measure every surface of the specimen.'],
+      modelo: ['3D model', 'The mesh is rebuilt and textured, and faculty check its fidelity.'],
+      anotacao: ['Annotation', 'Each structure of interest gets a name and a description, to study in the browser or on a phone.'],
+    },
+  },
+  fr: {
+    note: 'Simulation illustrative. Projet en conception.',
+    pause: 'Mettre l\'animation en pause', play: 'Lire l\'animation',
+    tags: {
+      captura: ['Capture', 'Photogrammétrie et lumière structurée mesurent chaque surface de la pièce.'],
+      modelo: ['Modèle 3D', 'Le maillage est reconstruit et texturé, et des enseignants en vérifient la fidélité.'],
+      anotacao: ['Annotation', 'Chaque structure d\'intérêt reçoit un nom et une description, à étudier dans le navigateur ou sur un téléphone.'],
+    },
+  },
+};
+
+const $ = (id) => document.getElementById(id);
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const params = new URLSearchParams(location.search);
+const stage = $('stage');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const lang = NDAnim.lang;
+let playing = !reduced;
+
+// ---------- renderer & scene (as in the other scenes) ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(Math.max(devicePixelRatio, 1.5), 1.75));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.localClippingEnabled = true;
+stage.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x050807);
+const camera = new THREE.PerspectiveCamera(30, 16 / 9, 0.02, 20);
+scene.add(new THREE.HemisphereLight(0xe6ecea, 0x0b1210, 0.9));
+const key = new THREE.DirectionalLight(0xffffff, 2.2);
+key.position.set(1.6, 3, 2.4);
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xb9c7d6, 0.55);
+fill.position.set(-2.5, 1.2, 1.5);
+scene.add(fill);
+const back = new THREE.DirectionalLight(0xffffff, 0.9);
+back.position.set(-1, 2, -3);
+scene.add(back);
+
+// ---------- the specimen: the bust of the model ----------
+const gltf = await new GLTFLoader().loadAsync('modelo/humano.glb').catch(() => null);
+if (!gltf) { NDAnim.falhou(); throw new Error('model'); }
+const model = gltf.scene;
+const peca = new THREE.Group();          // turns on the turntable
+scene.add(peca);
+peca.add(model);
+let body = null;
+model.traverse((o) => { if (o.isSkinnedMesh && (!body || o.geometry.attributes.position.count > body.geometry.attributes.position.count)) body = o; });
+const bone = (n) => { let b = null; model.traverse((o) => { if (o.isBone && (o.name.endsWith(n) || o.name === n)) b = b || o; }); return b; };
+// the same scale as the other scenes: a 0.889 m hip-to-ankle leg
+const wpos = (o) => o.getWorldPosition(new THREE.Vector3());
+model.updateMatrixWorld(true);
+const coxa = bone('LeftUpLeg') || bone('thigh_l'), joelho = bone('LeftLeg') || bone('calf_l'), pe = bone('LeftFoot') || bone('foot_l');
+model.scale.setScalar(0.889 / (wpos(coxa).distanceTo(wpos(joelho)) + wpos(joelho).distanceTo(wpos(pe))));
+model.updateMatrixWorld(true);
+const neck = bone('Neck') || bone('neck_01'), head = bone('Head');
+const cabeca = wpos(head);
+// cut through the neck: the specimen is the head
+const corte = wpos(neck).y + 0.035;
+// centre the head on the turntable axis
+model.position.set(-cabeca.x, -corte, -cabeca.z);
+model.updateMatrixWorld(true);
+const TOPO = cabeca.y - corte + 0.18;     // a little above the crown, in turntable space
+
+const clipe = new THREE.Plane(V(0, 1, 0), 0);
+const clay = new THREE.MeshStandardMaterial({ color: 0xc6cdcb, roughness: 0.82, metalness: 0, transparent: true, opacity: 0,
+  clippingPlanes: [clipe] });
+model.traverse((o) => { if (o.isMesh) { o.material = clay; o.frustumCulled = false; } });
+
+// points on the skin of the bust, area-weighted, from the skinned rest pose
+const pos = body.geometry.attributes.position, idx = body.geometry.index;
+const P = (i) => { const v = new THREE.Vector3().fromBufferAttribute(pos, i); body.applyBoneTransform(i, v); return v.applyMatrix4(body.matrixWorld); };
+const tris = [];
+let area = 0;
+for (let k = 0; k < idx.count; k += 3) {
+  const a = P(idx.getX(k)), b = P(idx.getX(k + 1)), c = P(idx.getX(k + 2));
+  if (Math.min(a.y, b.y, c.y) < -0.01) continue;
+  const s = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a)).length() / 2;
+  area += s; tris.push([a, b, c, area]);
+}
+let seed = 11;
+const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+const N = 26000, pts = new Float32Array(N * 3);
+for (let i = 0; i < N; i++) {
+  const r = rnd() * area;
+  let lo = 0, hi = tris.length - 1;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (tris[m][3] < r) lo = m + 1; else hi = m; }
+  const [a, b, c] = tris[lo];
+  let u = rnd(), v = rnd(); if (u + v > 1) { u = 1 - u; v = 1 - v; }
+  const p = a.clone().addScaledVector(new THREE.Vector3().subVectors(b, a), u).addScaledVector(new THREE.Vector3().subVectors(c, a), v);
+  pts.set([p.x, p.y, p.z], i * 3);
+}
+const nuvemGeo = new THREE.BufferGeometry();
+nuvemGeo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+const nuvemMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  uniforms: { uScan: { value: 1 }, uFade: { value: 1 }, uSize: { value: 1.7 } },
+  vertexShader: `uniform float uSize; varying float vY;
+    void main(){ vY = position.y; vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = uSize * (1.6 / -mv.z); gl_Position = projectionMatrix * mv; }`,
+  fragmentShader: `uniform float uScan; uniform float uFade; varying float vY;
+    void main(){ vec2 d = gl_PointCoord - 0.5; if (dot(d, d) > 0.25) discard;
+      float visto = step(uScan, vY);
+      float perto = 1.0 - smoothstep(0.0, 0.025, abs(vY - uScan));
+      vec3 cor = mix(vec3(0.82, 0.86, 0.85), vec3(0.81, 0.86, 0.0), perto);
+      float a = (visto * 0.3 + perto * 0.85) * uFade;
+      if (a < 0.01) discard;
+      gl_FragColor = vec4(cor * a, a); }`,
+});
+const nuvem = new THREE.Points(nuvemGeo, nuvemMat);
+peca.add(nuvem);
+
+// the capture ring: it stays still while the specimen turns under it
+const anel = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.0016, 8, 160), new THREE.MeshBasicMaterial({ color: 0xcedc00, transparent: true }));
+anel.rotation.x = Math.PI / 2;
+scene.add(anel);
+const disco = new THREE.Mesh(new THREE.CircleGeometry(0.2, 96), new THREE.MeshBasicMaterial({ color: 0xcedc00, transparent: true, opacity: 0.05,
+  side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
+disco.rotation.x = -Math.PI / 2;
+scene.add(disco);
+// a base under the specimen, like a turntable
+const base = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.18, 0.02, 96), new THREE.MeshStandardMaterial({ color: 0x161c1a, roughness: 0.8 }));
+base.position.y = -0.012;
+scene.add(base);
+const baseAro = new THREE.Mesh(new THREE.TorusGeometry(0.178, 0.0012, 6, 160), new THREE.MeshBasicMaterial({ color: 0x9aa5a1, transparent: true, opacity: 0.35 }));
+baseAro.rotation.x = Math.PI / 2;
+baseAro.position.y = 0;
+scene.add(baseAro);
+
+// the annotated structure: the left ear (the vertex farthest out at ear height)
+let orelha = null;
+{
+  const alvoY = cabeca.y - corte + 0.04;
+  let best = -Infinity;
+  for (let i = 0; i < pos.count; i++) {
+    const p = P(i);
+    if (Math.abs(p.y - alvoY) > 0.03 || p.z < -0.05 || p.z > 0.05) continue;
+    if (p.x > best) { best = p.x; orelha = p; }
+  }
+  orelha = orelha || V(0.08, alvoY, 0);
+}
+// drawn over the mesh, so the ear never hides it
+const marcador = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 16, 12), new THREE.MeshBasicMaterial({ color: 0xcedc00, transparent: true, depthTest: false }));
+marcador.position.copy(orelha).add(V(0.012, 0, 0));
+marcador.renderOrder = 5;
+peca.add(marcador);
+const marcaAro = new THREE.Mesh(new THREE.RingGeometry(0.009, 0.0105, 48), new THREE.MeshBasicMaterial({ color: 0xcedc00, transparent: true, side: THREE.DoubleSide, depthTest: false }));
+marcaAro.renderOrder = 5;
+marcaAro.position.copy(marcador.position);
+marcaAro.rotation.y = Math.PI / 2;
+peca.add(marcaAro);
+// the anchor of "3D model": the brow, on the specimen itself
+let testa = null;
+{
+  const alvoY = cabeca.y - corte + 0.075;
+  let best = -Infinity;
+  for (let i = 0; i < pos.count; i++) {
+    const p = P(i);
+    if (Math.abs(p.y - alvoY) > 0.02) continue;
+    if (p.z > best) { best = p.z; testa = p; }
+  }
+}
+const testaPonto = new THREE.Object3D();
+testaPonto.position.copy(testa || V(0, cabeca.y - corte + 0.075, 0.09));
+peca.add(testaPonto);
+
+// ---------- the cycle ----------
+// 0-4.6 s the ring comes down and the points appear; 4.6-6.4 the points turn
+// into the mesh; 6.4-11 the mesh turns and the ear is annotated; then back.
+const PERIOD = 12.5;
+const smooth = (v) => { v = Math.min(1, Math.max(0, v)); return v * v * (3 - 2 * v); };
+const rampa = (c, a, b) => smooth((c - a) / (b - a));
+const anchors = { captura: new THREE.Vector3(), modelo: new THREE.Vector3(), anotacao: new THREE.Vector3() };
+function update(time) {
+  const c = time % PERIOD;
+  peca.rotation.y = -0.35 + time * 0.25;
+  const desce = rampa(c, 0.3, 4.6);
+  const y = lerpN(TOPO, -0.01, desce);
+  nuvemMat.uniforms.uScan.value = c < 0.3 ? TOPO + 1 : y;
+  const vira = rampa(c, 4.8, 6.4), volta = rampa(c, 11.2, 12.4);
+  nuvemMat.uniforms.uFade.value = Math.max(1 - vira * 0.85, volta);
+  clay.opacity = vira * (1 - volta);
+  clay.depthWrite = clay.opacity > 0.9;
+  anel.position.y = disco.position.y = y;
+  const anelOn = c < 4.9 ? 1 - rampa(c, 4.5, 4.9) : 0;
+  anel.material.opacity = anelOn; disco.material.opacity = 0.05 * anelOn;
+  marcador.material.opacity = rampa(c, 7.0, 7.6) * (1 - volta);
+  const pulso = (c * 0.9) % 1;
+  marcaAro.material.opacity = marcador.material.opacity * (1 - pulso) * 0.9;
+  marcaAro.scale.setScalar(1 + pulso * 1.6);
+  anchors.captura.set(0.14, y, 0.14);
+  marcador.getWorldPosition(anchors.anotacao);
+  testaPonto.getWorldPosition(anchors.modelo);
+}
+const lerpN = (a, b, k) => a + (b - a) * k;
+
+// ---------- camera ----------
+const target = V(0, 0.12, 0);
+function placeCamera(time) {
+  const narrow = stage.clientWidth / stage.clientHeight < 1;
+  const phi = THREE.MathUtils.degToRad(params.has('phi') ? +params.get('phi') : 18);
+  const el = THREE.MathUtils.degToRad(12);
+  const dist = params.has('d') ? +params.get('d') : (narrow ? 1.25 : 0.95) + 0.03 * Math.sin((time / 24) * Math.PI * 2);
+  const aim = narrow ? target.clone().add(V(0, -0.01, 0)) : target.clone().add(V(-0.05, 0, 0));
+  camera.position.set(aim.x + dist * Math.sin(phi) * Math.cos(el), aim.y + dist * Math.sin(el), aim.z + dist * Math.cos(phi) * Math.cos(el));
+  camera.lookAt(aim);
+}
+const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }));
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), 0.3, 0.35, 0.8));
+composer.addPass(new OutputPass());
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false); composer.setSize(w, h);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+
+// ---------- labels: written once, then still (as in the other scenes) ----------
+const TAGS = [
+  { key: 'captura', wide: [0.04, 0.06, 'left'], narrow: [0.05, 0.03, 'left'] },
+  { key: 'modelo', wide: [0.96, 0.06, 'right'], narrow: [0.95, 0.03, 'right'] },
+  { key: 'anotacao', wide: [0.96, 0.62, 'right'], narrow: [0.95, 0.93, 'right'] },
+];
+const svg = $('leaders'), NS = 'http://www.w3.org/2000/svg';
+for (const [i, tg] of TAGS.entries()) {
+  tg.el = document.createElement('div'); tg.el.className = 'tag'; tg.el.innerHTML = '<b></b><span></span>';
+  tg.num = String(i + 1).padStart(2, '0'); $('tags').appendChild(tg.el);
+  tg.line = document.createElementNS(NS, 'polyline'); tg.line.setAttribute('class', 'leader'); svg.appendChild(tg.line);
+  tg.dot = document.createElementNS(NS, 'circle'); tg.dot.setAttribute('r', 2.5); tg.dot.setAttribute('class', 'anchor'); svg.appendChild(tg.dot);
+  tg.shown = -1;
+}
+let revealStart = null;
+const CHARS_PER_SEC = 34, GAP = 0.9;
+function drawTags() {
+  const T = TEXT[lang], w = stage.clientWidth, h = stage.clientHeight, narrow = w < 760;
+  const since = revealStart === null ? -1 : (performance.now() - revealStart) / 1000;
+  let offset = 0;
+  TAGS.forEach((tg) => {
+    const [title, sub] = T.tags[tg.key];
+    const n = reduced ? title.length : Math.max(0, Math.min(title.length, Math.floor((since - offset) * CHARS_PER_SEC)));
+    offset += title.length / CHARS_PER_SEC + GAP;
+    if (n !== tg.shown) {
+      tg.el.firstChild.innerHTML = n > 0 ? `<i>${tg.num}</i>` : '';
+      tg.el.firstChild.append(title.slice(0, n));
+      tg.el.querySelector('span').textContent = sub;
+      tg.el.classList.toggle('is-done', n === title.length);
+      tg.shown = n;
+    }
+    const on = n > 0 ? 1 : 0;
+    tg.line.style.opacity = on; tg.dot.style.opacity = on;
+    const p = anchors[tg.key].clone().project(camera);
+    const x = (p.x * 0.5 + 0.5) * w, y = (-p.y * 0.5 + 0.5) * h;
+    const [fx, fy, edge] = narrow ? tg.narrow : tg.wide;
+    const tw = Math.max(tg.el.offsetWidth, 1), th = tg.el.offsetHeight;
+    const left = edge === 'left' ? fx * w : fx * w - tw, top = fy * h;
+    tg.el.style.transform = `translate(${left}px, ${top}px)`;
+    const baseY = y < top ? top - 6 : top + th + 6;
+    const nearX = Math.abs(x - left) < Math.abs(x - (left + tw)) ? left : left + tw;
+    const farX = nearX === left ? left + tw : left;
+    tg.line.setAttribute('points', `${x},${y} ${nearX},${baseY} ${farX},${baseY}`);
+    tg.dot.setAttribute('cx', x); tg.dot.setAttribute('cy', y);
+  });
+}
+
+// ---------- loop ----------
+function applyLanguage() {
+  const T = TEXT[lang];
+  document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = T[el.dataset.t]; });
+  NDAnim.botao($('toggle'), playing, T);
+  $('legend').innerHTML = TAGS.map((tg) => T.tags[tg.key]).map(([title, body], i) =>
+    `<li><b><i>${String(i + 1).padStart(2, '0')}</i>${title}</b><p>${body}</p></li>`).join('');
+}
+applyLanguage();
+let clock = 0, last = null, raf = 0, visible = true, frozen = false;
+if (params.has('t')) { frozen = true; clock = +params.get('t') || 0; }
+// Still frame for reduced motion and the poster: half scanned, half mesh.
+if (reduced && !frozen) clock = 8.2;
+function frame(now) {
+  if (last !== null && playing && !frozen) clock += Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(clock);
+  placeCamera(reduced ? 0 : clock);
+  composer.render();
+  drawTags();
+  raf = visible ? requestAnimationFrame(frame) : 0;
+}
+function start() { if (!raf) { last = null; raf = requestAnimationFrame(frame); } }
+$('status').remove();
+resize();
+start();
+new IntersectionObserver(([entry]) => {
+  visible = entry.isIntersecting;
+  if (visible && revealStart === null) revealStart = performance.now() + 500;
+  if (visible) start();
+}, { threshold: 0.3 }).observe(stage);
+$('toggle').addEventListener('click', () => { playing = !playing; applyLanguage(); });
+</script>
+</body>
+</html>

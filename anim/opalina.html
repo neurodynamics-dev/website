@@ -1,0 +1,1090 @@
+<!doctype html>
+<!--
+  NeuroDynamics · Opalina animation prototype (from the animacao-neuro template).
+  Map: TEXT · breathing model · materials/clay (breath, diaphragm, neck pads)
+  · ICU bed · patient (lying pose, once) · blanket · pillow · sensor + airway
+  · ventilator · ReCARE · neck electrodes/cables · update · camera · labels.
+  Debug URL params: t=<sec>|i|e (freeze; i = mid-stimulus, e = expiration),
+  phi el d look=x,y,z (camera), zd (close-up distance), turn (head turn),
+  all=1 (diaphragm lit), nude=1, lang=en.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Opalina, animação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600&family=IBM+Plex+Mono:wght@500;600&family=Instrument+Sans:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../ds/tokens.css">
+<link rel="stylesheet" href="anim.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<main class="anim" id="anim">
+  <div class="stage" id="stage">
+    <div class="stage__status" id="status"></div>
+    <div class="overlay" aria-hidden="true">
+      <svg id="leaders"></svg>
+      <div id="tags"></div>
+    </div>
+    <p class="note" data-t="note"></p>
+  </div>
+  <button class="toggle" type="button" id="toggle"></button>
+  <ol class="legend" id="legend"></ol>
+</main>
+<script src="anim.js"></script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+const TEXT = {
+  pt: {
+    note: 'Simulação ilustrativa. Projeto em pesquisa.',
+    pause: 'Pausar a animação', play: 'Reproduzir a animação', detail: 'Detalhe',
+    // Na ordem de TAGS: sensor, ReCARE, eletrodos do pescoço, diafragma.
+    tags: [
+      ['Sensor de fluxo', 'Fica no circuito de ar entre o ventilador e o paciente e percebe quando o ar está entrando.'],
+      ['ReCARE', 'Eletroestimulador da Visuri. Recebe a leitura do sensor e só libera o estímulo enquanto o ar entra.'],
+      ['Eletrodos no pescoço', 'Colados sobre o caminho do nervo frênico, o nervo que comanda o diafragma.'],
+      ['Diafragma', 'O principal músculo da respiração. Contrai junto com o ar do ventilador, em vez de ficar parado.'],
+    ],
+    lcd: ['Fluxo 10', 'conectado ao ReCARE'],
+  },
+  en: {
+    note: 'Illustrative simulation. Research project.',
+    pause: 'Pause the animation', play: 'Play the animation', detail: 'Detail',
+    tags: [
+      ['Flow sensor', 'Sits in the air circuit between the ventilator and the patient and detects when air is flowing in.'],
+      ['ReCARE', 'Visuri electrostimulator. Receives the sensor reading and only releases the stimulus while air flows in.'],
+      ['Neck electrodes', 'Placed over the path of the phrenic nerve, the nerve that controls the diaphragm.'],
+      ['Diaphragm', 'The main breathing muscle. It contracts with the ventilator\u2019s breath instead of staying idle.'],
+    ],
+    lcd: ['Flow 10', 'connected to ReCARE'],
+  },
+  fr: {
+    note: 'Simulation illustrative. Projet de recherche.',
+    pause: 'Mettre l\'animation en pause', play: 'Lire l\'animation', detail: 'Détail',
+    tags: [
+      ['Capteur de débit', 'Placé dans le circuit d\'air entre le ventilateur et le patient, il détecte l\'entrée de l\'air.'],
+      ['ReCARE', 'Électrostimulateur de Visuri. Il reçoit la lecture du capteur et ne délivre le stimulus que pendant l\'entrée de l\'air.'],
+      ['Électrodes sur le cou', 'Posées sur le trajet du nerf phrénique, le nerf qui commande le diaphragme.'],
+      ['Diaphragme', 'Le principal muscle de la respiration. Il se contracte avec le souffle du ventilateur au lieu de rester immobile.'],
+    ],
+    lcd: ['Débit 10', 'connecté au ReCARE'],
+  },
+};
+
+const $ = (id) => document.getElementById(id);
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const params = new URLSearchParams(location.search);
+const stage = $('stage');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let lang = NDAnim.lang;
+let playing = !reduced;
+
+// ---------- renderer & scene ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+// At least 1.5x even on 1x screens: the browser scales the canvas down, which
+// smooths edges and the small LCD text. Capped at 1.75 for phones.
+renderer.setPixelRatio(Math.min(Math.max(devicePixelRatio, 1.5), 1.75));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.shadowMap.enabled = true;
+stage.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x050807);
+scene.fog = new THREE.Fog(0x050807, 5, 10);
+const camera = new THREE.PerspectiveCamera(30, 16 / 9, 0.05, 40);
+const target = V(0.12, 0.85, -0.35);
+
+scene.add(new THREE.HemisphereLight(0xe6ecea, 0x0b1210, 0.9));
+const key = new THREE.DirectionalLight(0xffffff, 2.3);
+key.position.set(2.2, 4.2, 2.0);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -1.9, right: 1.9, top: 1.9, bottom: -1.9, near: 0.5, far: 12 });
+key.shadow.bias = -0.0003;
+key.shadow.radius = 4;
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xb9c7d6, 0.55);
+fill.position.set(-3, 1.2, 1.5);
+scene.add(fill);
+const back = new THREE.DirectionalLight(0xffffff, 0.8);
+back.position.set(-1.5, 2.2, -3.5);
+scene.add(back);
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.ShadowMaterial({ opacity: 0.45 }));
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+const grid = new THREE.GridHelper(8, 32, 0x9aa5a1, 0x9aa5a1);
+grid.material.transparent = true;
+grid.material.opacity = 0.05;
+grid.position.y = 0.001;
+scene.add(grid);
+
+// ---------- breathing model ----------
+// One ventilator breath every PERIOD seconds: inspiration for TI, then a
+// passive expiration. The sensor sees air flowing in; a moment later the
+// stimulus ramps up, holds and ramps down, always inside the inspiration.
+// Timings are for the eye only, not device parameters.
+const PERIOD = 4.5, TI = 1.5;
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+function breath(t) {
+  const u = ((t % PERIOD) + PERIOD) % PERIOD;
+  const vol = u < TI ? 0.5 - 0.5 * Math.cos((Math.PI * u) / TI) : Math.exp(-(u - TI) / 0.6);
+  const insp = smooth(0.02, 0.22, u) * (1 - smooth(TI - 0.08, TI + 0.12, u));
+  const stim = smooth(0.3, 0.55, u) * (1 - smooth(TI - 0.3, TI - 0.02, u));
+  return { u, vol, insp, stim };
+}
+
+// ---------- materials ----------
+const clay = new THREE.MeshStandardMaterial({ color: 0xc6cdcb, roughness: 0.82, metalness: 0 });
+const skin = {
+  uLime: { value: new THREE.Color(0xcedc00) },
+  uLogo: { value: new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1) },
+  uIcon: { value: new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1) },
+  // Neck electrodes, painted like stickers: centre and outward normal in the
+  // body's rest (bind) space.
+  uNeckC: { value: [V(0, -9, 0), V(0, -9, 0)] },
+  uNeckN: { value: [V(1, 0, 0), V(1, 0, 0)] },
+  uBreath: { value: 0 },   // lung volume, 0..1: the chest rises
+  uDia: { value: 0 },      // diaphragm contraction, 0..1
+};
+skin.uLogo.value.needsUpdate = true;
+new THREE.TextureLoader().load('modelo/logo-camisa.png', (tex) => {
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  skin.uLogo.value = tex;
+});
+new THREE.TextureLoader().load('modelo/simbolo-manga.png', (tex) => {
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  skin.uIcon.value = tex;
+});
+clay.defines = {};
+if (!params.has('nude')) clay.defines.CLOTHES = '';
+clay.onBeforeCompile = (shader) => {
+  Object.assign(shader.uniforms, skin);
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', `#include <common>
+      varying vec3 vBind;
+      uniform float uBreath;
+      uniform float uDia;`)
+    .replace('#include <begin_vertex>', `#include <begin_vertex>
+      // Breathing: the front of the chest rises with the air the ventilator
+      // pushes in; the upper belly moves out when the diaphragm contracts.
+      float chest = smoothstep(1.1, 1.2, position.y) * (1.0 - smoothstep(1.4, 1.48, position.y))
+                  * smoothstep(-0.02, 0.05, position.z) * (1.0 - smoothstep(0.13, 0.19, abs(position.x)));
+      float belly = smoothstep(1.08, 1.13, position.y) * (1.0 - smoothstep(1.19, 1.26, position.y))
+                  * smoothstep(0.0, 0.06, position.z) * (1.0 - smoothstep(0.1, 0.16, abs(position.x)));
+      transformed += normal * (chest * uBreath * 0.012 + belly * uDia * 0.008);`)
+    .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+      vBind = position;`);
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', `#include <common>
+      varying vec3 vBind;
+      uniform vec3 uLime;
+      uniform sampler2D uLogo;
+      uniform sampler2D uIcon;
+      uniform vec3 uNeckC[2];
+      uniform vec3 uNeckN[2];
+      uniform float uDia;`)
+    .replace('#include <color_fragment>', `#include <color_fragment>
+      #ifdef CLOTHES
+      float ax = abs(vBind.x);
+      float shorts = step(0.74, vBind.y) * step(vBind.y, 1.04) * step(ax, 0.3);
+      float shirt = max(step(1.0, vBind.y) * step(vBind.y, 1.52) * step(ax, 0.215),
+                        step(1.33, vBind.y) * step(vBind.y, 1.57) * step(0.17, ax) * step(ax, 0.4));
+      float hem = shorts * (1.0 - smoothstep(0.0, 0.012, vBind.y - 0.74))
+                + max(shirt - shorts, 0.0) * (1.0 - smoothstep(0.0, 0.012, 1.52 - vBind.y) * step(ax, 0.215))
+                + step(1.33, vBind.y) * step(vBind.y, 1.57) * (1.0 - smoothstep(0.0, 0.012, 0.4 - ax)) * step(0.17, ax);
+      float shirtOnly = max(shirt - shorts, 0.0);
+      diffuseColor.rgb *= (1.0 - 0.55 * shorts) * (1.0 - 0.78 * shirtOnly) * (1.0 - 0.35 * clamp(hem, 0.0, 1.0));
+      vec2 luv = vec2((vBind.x + 0.1025) / 0.205, (vBind.y - 1.318) / 0.035);
+      float inLogo = step(0.0, luv.x) * step(luv.x, 1.0) * step(0.0, luv.y) * step(luv.y, 1.0) * step(0.03, vBind.z) * shirtOnly;
+      vec4 logoTex = texture2D(uLogo, clamp(luv, 0.0, 1.0));
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92), inLogo * logoTex.a * logoTex.r);
+      // The NeuroDynamics symbol (no wordmark) on the outer side of each
+      // sleeve. Measured on the rest pose: shoulder joint (0.212, 1.455,
+      // -0.065) to elbow (0.463, 1.455, -0.073); the face that points up in
+      // the T-pose is the outer side once the arm hangs.
+      for (int k = 0; k < 2; k++) {
+        float sd = k == 0 ? 1.0 : -1.0;
+        vec3 sa = vec3(0.212 * sd, 1.455, -0.065), sb = vec3(0.463 * sd, 1.455, -0.073);
+        vec3 ab = sb - sa;
+        float st = dot(vBind - sa, ab) / dot(ab, ab);
+        vec3 sr = vBind - (sa + ab * st);
+        float ang = atan(sr.z, sr.y);                      // 0 on the outer side
+        // Upright when the arm hangs: the top of the symbol points to the
+        // shoulder and it reads from outside the arm, not mirrored. 5 cm tall
+        // along the arm (st 0.25-0.45 of 0.251 m) and 1.8 rad around it: tuned
+        // on renders of the hanging arm until it kept the icon's 512:456 look.
+        vec2 suv = vec2(0.5 - sd * ang / 1.8, (0.45 - st) / 0.2);
+        float inS = step(0.0, suv.x) * step(suv.x, 1.0) * step(0.0, suv.y) * step(suv.y, 1.0) * step(0.0, sr.y) * shirtOnly;
+        vec4 ic = texture2D(uIcon, clamp(suv, 0.0, 1.0));
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92), inS * ic.a);
+      }
+      #endif
+      // Diaphragm, seen through the body: a dome under the lower ribs. A faint
+      // line marks it at rest; it fills with lime while it contracts, and the
+      // dome drops a little, as the real muscle does.
+      float dx = abs(vBind.x);
+      float domeY = 1.2 + 0.09 * (1.0 - pow(min(dx / 0.15, 1.0), 2.0)) - 0.012 * uDia;
+      float front = smoothstep(-0.05, 0.03, vBind.z) * (1.0 - smoothstep(0.13, 0.16, dx));
+      float dLine = 1.0 - smoothstep(0.002, 0.005, abs(vBind.y - domeY));
+      // The muscle itself: a cap under the dome line, down to the lower ribs.
+      float dFill = (0.45 + 0.55 * smoothstep(domeY - 0.09, domeY, vBind.y)) * step(vBind.y, domeY) * smoothstep(1.1, 1.14, vBind.y);
+      float dia = clamp(dLine + dFill * 0.55, 0.0, 1.0) * front;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.55, 0.6, 0.58), dLine * front * 0.18);
+      diffuseColor.rgb = mix(diffuseColor.rgb, uLime * 0.85, dia * uDia * 0.8);
+      // Neck electrodes: small round white pads with a dark snap.
+      float npad = 0.0, nsnap = 0.0;
+      for (int i = 0; i < 2; i++) {
+        vec3 d = vBind - uNeckC[i];
+        float dn = dot(d, uNeckN[i]);
+        if (abs(dn) > 0.02) continue;
+        float r = length(d - uNeckN[i] * dn);
+        npad = max(npad, 1.0 - smoothstep(0.0082, 0.0094, r));
+        nsnap = max(nsnap, 1.0 - smoothstep(0.0026, 0.0034, r));
+      }
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.94, 0.94), npad);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.08, 0.09, 0.09), nsnap * npad);`)
+    .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      totalEmissiveRadiance += uLime * dia * uDia * 0.25;`);
+};
+const std = (color, roughness = 0.6, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness, metalness: 0, ...extra });
+const frameMat = new THREE.MeshStandardMaterial({ color: 0x55605c, roughness: 0.45, metalness: 0.6 });
+const darkMat = std(0x161c1a, 0.85);
+const whiteMat = std(0xe9ecee, 0.5);           // device housings (ReCARE, ventilator)
+const panelMat = std(0x0d1211, 0.25);          // glossy dark panels
+const mattressMat = std(0x2b3432, 0.9);
+const blanketMat = std(0x46514e, 0.95, { side: THREE.DoubleSide });
+const pillowMat = std(0x5d6865, 0.95);
+const hoseMat = std(0xd5dcda, 0.35, { transparent: true, opacity: 0.72 });
+const clearMat = std(0xe3eae8, 0.25, { transparent: true, opacity: 0.6 });
+const shadowy = (m) => { m.castShadow = true; m.receiveShadow = true; return m; };
+const mesh = (geo, mat) => shadowy(new THREE.Mesh(geo, mat));
+const tube = (points, r, mat = frameMat, seg = 48) => mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), seg, r, 10, false), mat);
+const rbox = (w, h, d, r, mat) => mesh(new RoundedBoxGeometry(w, h, d, 3, r), mat);
+// Corrugated breathing hose: a tube whose radius ripples along its length.
+function hose(points, r, mat = hoseMat, pitch = 0.011) {
+  const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
+  const segs = Math.max(8, Math.round(curve.getLength() / (pitch / 2)));
+  const RAD = 12;
+  const g = new THREE.TubeGeometry(curve, segs, r, RAD, false);
+  const pos = g.attributes.position, P = new THREE.Vector3(), v = new THREE.Vector3();
+  for (let i = 0; i <= segs; i++) {
+    curve.getPointAt(i / segs, P);
+    const k = i % 2 ? 1.1 : 0.96;
+    for (let j = 0; j <= RAD; j++) {
+      const idx = i * (RAD + 1) + j;
+      v.fromBufferAttribute(pos, idx).sub(P).multiplyScalar(k).add(P);
+      pos.setXYZ(idx, v.x, v.y, v.z);
+    }
+  }
+  g.computeVertexNormals();
+  return mesh(g, mat);
+}
+function canvasTex(w, h, draw) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  tex.redraw = () => { draw(c.getContext('2d'), w, h); tex.needsUpdate = true; };
+  tex.redraw();
+  return tex;
+}
+function casterBase(parent, radius, y = 0.05) {
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2;
+    const leg = mesh(new THREE.BoxGeometry(radius, 0.022, 0.04), whiteMat);
+    leg.position.set(Math.cos(a) * radius / 2, y + 0.03, Math.sin(a) * radius / 2);
+    leg.rotation.y = -a;
+    parent.add(leg);
+    const w = mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.022, 16), darkMat);
+    w.rotation.x = Math.PI / 2;
+    w.rotation.y = -a;
+    w.position.set(Math.cos(a) * radius, 0.03, Math.sin(a) * radius);
+    parent.add(w);
+  }
+}
+
+// ---------- ICU bed ----------
+// Patient lies along Z, head toward -Z, feet toward +Z; +X is the patient's
+// left, where the ventilator and the ReCARE stand. Head of bed raised 30°.
+const YM = 0.62;                                   // mattress top
+const BACK = THREE.MathUtils.degToRad(30);
+const BACK_DIR = V(0, Math.sin(BACK), -Math.cos(BACK));
+const bed = new THREE.Group();
+scene.add(bed);
+const MW = 0.9, MT = 0.14;                         // mattress width, thickness
+const HINGE = -0.07;                               // measured: back gap to backrest ~0
+const flat = mesh(new RoundedBoxGeometry(MW, MT, 1.2 - HINGE, 3, 0.04), mattressMat);
+flat.position.set(0, YM - MT / 2, (1.2 + HINGE) / 2);
+bed.add(flat);
+const backrest = new THREE.Group();                // local -Z runs up the backrest
+backrest.position.set(0, YM, HINGE);
+backrest.rotation.x = BACK;
+bed.add(backrest);
+const upper = mesh(new RoundedBoxGeometry(MW, MT, 1.0, 3, 0.04), mattressMat);
+upper.position.set(0, -MT / 2, -0.5);
+backrest.add(upper);
+const bedFrame = mesh(new THREE.BoxGeometry(0.8, 0.08, 2.0), frameMat);
+bedFrame.position.set(0, 0.42, 0.2);
+bed.add(bedFrame);
+for (const [x, z] of [[0.34, -0.7], [-0.34, -0.7], [0.34, 1.1], [-0.34, 1.1]]) {
+  bed.add(tube([V(x, 0.42, z), V(x, 0.09, z)], 0.02));
+  const w = mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.04, 20), darkMat);
+  w.rotation.z = Math.PI / 2;
+  w.position.set(x, 0.06, z);
+  bed.add(w);
+}
+const foot = rbox(0.92, 0.36, 0.04, 0.015, whiteMat);
+foot.position.set(0, YM + 0.02, 1.24);
+bed.add(foot);
+const head = rbox(0.92, 0.5, 0.04, 0.015, whiteMat);
+head.position.set(0, YM - 0.02, -1.0);
+bed.add(head);
+// ---------- patient ----------
+const loader = new GLTFLoader();
+const gltf = await loader.loadAsync('modelo/humano.glb').catch(() => null);
+if (!gltf) { NDAnim.falhou(); throw new Error('model'); }
+const model = gltf.scene;
+model.traverse((o) => {
+  if (o.isMesh) { o.material = clay; o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; }
+});
+scene.add(model);
+const UE = {
+  Hips: 'pelvis', Spine: 'spine_01', Spine1: 'spine_02', Spine2: 'spine_03', Neck: 'neck_01', Head: 'Head',
+  LeftArm: 'upperarm_l', LeftForeArm: 'lowerarm_l', LeftHand: 'hand_l',
+  RightArm: 'upperarm_r', RightForeArm: 'lowerarm_r', RightHand: 'hand_r',
+  LeftUpLeg: 'thigh_l', LeftLeg: 'calf_l', LeftFoot: 'foot_l', LeftToeBase: 'ball_l',
+  RightUpLeg: 'thigh_r', RightLeg: 'calf_r', RightFoot: 'foot_r', RightToeBase: 'ball_r',
+};
+let prefix = '';
+let unreal = false;
+model.traverse((o) => {
+  if (o.isBone && /Hips$/.test(o.name)) prefix = o.name.replace(/Hips$/, '');
+  if (o.isBone && o.name === 'pelvis') unreal = true;
+});
+const B = {};
+for (const n of Object.keys(UE)) B[n] = model.getObjectByName(unreal ? UE[n] : prefix + n);
+const rest = [];
+model.traverse((o) => { if (o.isBone) rest.push([o, o.quaternion.clone()]); });
+const wp = (o) => o.getWorldPosition(new THREE.Vector3());
+const len = (a, b) => wp(a).distanceTo(wp(b));
+// Lying on the back: rest (standing) Y becomes -Z, rest front (+Z) becomes up.
+// Measured on this body: the back of the hips is 14.7 cm behind the pelvis
+// bone, the pelvis bone 0.949 m above the soles.
+model.rotation.x = -Math.PI / 2;
+model.position.set(0, YM + 0.14, 0.12 + 0.949);
+model.updateMatrixWorld(true);
+const LEN = { upper: len(B.LeftArm, B.LeftForeArm), fore: len(B.LeftForeArm, B.LeftHand) };
+
+let bodyMesh = null;
+model.traverse((o) => {
+  if (o.isSkinnedMesh && (!bodyMesh || o.geometry.attributes.position.count > bodyMesh.geometry.attributes.position.count)) bodyMesh = o;
+});
+const bodyPos = bodyMesh.geometry.attributes.position;
+function skinPoint(i, out) {
+  out.fromBufferAttribute(bodyPos, i);
+  bodyMesh.applyBoneTransform(i, out);
+  return out.applyMatrix4(bodyMesh.matrixWorld);
+}
+// Nearest skin vertex to a rest-space point (optionally only among a subset).
+function nearestVertex(p, ok = () => true) {
+  let best = -1, bd = Infinity;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < bodyPos.count; i++) {
+    v.fromBufferAttribute(bodyPos, i);
+    if (!ok(v)) continue;
+    const d = v.distanceToSquared(p);
+    if (d < bd) { bd = d; best = i; }
+  }
+  return best;
+}
+
+// ---------- posing (once: only the breath moves, and it lives in the shader) ----------
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _q = new THREE.Quaternion(), _qw = new THREE.Quaternion(), _qp = new THREE.Quaternion();
+function aim(b, child, dir) {
+  b.getWorldPosition(_a);
+  child.getWorldPosition(_b);
+  _q.setFromUnitVectors(_b.sub(_a).normalize(), dir.clone().normalize());
+  b.getWorldQuaternion(_qw).premultiply(_q);
+  b.parent.getWorldQuaternion(_qp);
+  b.quaternion.copy(_qp.invert().multiply(_qw));
+  b.updateMatrixWorld(true);
+}
+function ik(root, mid, end, T, pole, L1, L2) {
+  const A = wp(root);
+  const dv = T.clone().sub(A);
+  const d = Math.min(Math.max(dv.length(), 0.05), L1 + L2 - 1e-3);
+  const u = dv.normalize();
+  const a = (L1 * L1 - L2 * L2 + d * d) / (2 * d);
+  const h = Math.sqrt(Math.max(0, L1 * L1 - a * a));
+  const p = pole.clone().sub(u.clone().multiplyScalar(pole.dot(u))).normalize();
+  const joint = A.clone().addScaledVector(u, a).addScaledVector(p, h);
+  aim(root, mid, joint.clone().sub(A));
+  aim(mid, end, A.clone().addScaledVector(u, d).sub(wp(mid)));
+}
+for (const [b, q] of rest) b.quaternion.copy(q);
+model.updateMatrixWorld(true);
+aim(B.Spine, B.Spine1, BACK_DIR);
+aim(B.Spine1, B.Spine2, BACK_DIR);
+aim(B.Spine2, B.Neck, BACK_DIR);
+const NECK_DIR = V(0, Math.sin(BACK + 0.12), -Math.cos(BACK + 0.12));
+aim(B.Neck, B.Head, NECK_DIR);
+// Head turned a little to its right, away from the devices, which opens the
+// left side of the neck where the electrodes are.
+B.Head.rotateOnWorldAxis(NECK_DIR.clone().normalize(), (params.has('turn') ? +params.get('turn') : -0.22));
+B.Head.updateMatrixWorld(true);
+
+// ---------- blanket: draped over the posed legs, up to the waist ----------
+const BLANKET_Z = 0.05;
+const blanket = (() => {
+  const X0 = -0.58, X1 = 0.58, Z0 = BLANKET_Z, Z1 = 1.34, S = 0.015;
+  const nx = Math.round((X1 - X0) / S) + 1, nz = Math.round((Z1 - Z0) / S) + 1;
+  const H = new Float32Array(nx * nz).fill(-9);
+  const v = new THREE.Vector3();
+  const R = 0.13, RC = Math.ceil(R / S);
+  for (let i = 0; i < bodyPos.count; i++) {
+    if (bodyPos.getY(i) > 1.08) continue;         // lower body only (rest space)
+    skinPoint(i, v);
+    const cx = (v.x - X0) / S, cz = (v.z - Z0) / S;
+    for (let a = Math.floor(cx - RC); a <= Math.ceil(cx + RC); a++) {
+      for (let b = Math.floor(cz - RC); b <= Math.ceil(cz + RC); b++) {
+        if (a < 0 || b < 0 || a >= nx || b >= nz) continue;
+        const d = Math.hypot(a - cx, b - cz) * S;
+        if (d > R) continue;
+        // Cloth leaves the body and falls off steeply, like a tent.
+        const h = v.y + 0.022 - 0.75 * d * d / R - 0.25 * d;
+        if (h > H[b * nx + a]) H[b * nx + a] = h;
+      }
+    }
+  }
+  const base = (x, z) => {
+    const ox = Math.max(0, Math.abs(x) - MW / 2), oz = Math.max(0, z - 1.2);
+    return YM + 0.012 - Math.min(0.32, (ox + oz) * 5);
+  };
+  const Y = new Float32Array(nx * nz);
+  for (let b = 0; b < nz; b++) for (let a = 0; a < nx; a++) Y[b * nx + a] = Math.max(base(X0 + a * S, Z0 + b * S), H[b * nx + a]);
+  // One smoothing pass that never lowers the cloth below the body.
+  const Ys = Y.slice();
+  for (let b = 1; b < nz - 1; b++) for (let a = 1; a < nx - 1; a++) {
+    let s = 0;
+    for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) s += Y[(b + j) * nx + a + i];
+    Ys[b * nx + a] = Math.max(s / 9, H[b * nx + a]);
+  }
+  const g = new THREE.PlaneGeometry(X1 - X0, Z1 - Z0, nx - 1, nz - 1);
+  g.rotateX(-Math.PI / 2);
+  const pos = g.attributes.position;
+  for (let k = 0; k < pos.count; k++) {
+    const a = Math.round((pos.getX(k) - (-(X1 - X0) / 2)) / S), b = Math.round((pos.getZ(k) - (-(Z1 - Z0) / 2)) / S);
+    pos.setXYZ(k, X0 + a * S, Ys[b * nx + a], Z0 + b * S);
+  }
+  g.computeVertexNormals();
+  const m = mesh(g, blanketMat);
+  scene.add(m);
+  const heightAt = (x, z) => {
+    const a = THREE.MathUtils.clamp(Math.round((x - X0) / S), 0, nx - 1), b = THREE.MathUtils.clamp(Math.round((z - Z0) / S), 0, nz - 1);
+    return Ys[b * nx + a];
+  };
+  // A rolled edge at the waist, so it reads as cloth folded back.
+  const edge = [];
+  for (let x = -0.5; x <= 0.501; x += 0.025) edge.push(V(x, Math.max(heightAt(x, Z0 + 0.01) + 0.004, Math.abs(x) < MW / 2 + 0.02 ? YM + 0.016 : -1), Z0 + 0.008));
+  scene.add(tube(edge, 0.012, blanketMat, 80));
+  return { heightAt };
+})();
+
+// Arms resting on the blanket, hands beside the hips.
+for (const [s, sx] of [['Left', 1], ['Right', -1]]) {
+  const HAND_LIFT = 0.075;
+  const hx = sx * 0.25, hz = 0.16;
+  ik(B[s + 'Arm'], B[s + 'ForeArm'], B[s + 'Hand'], V(hx, blanket.heightAt(hx, hz) + HAND_LIFT, hz), V(sx * 0.8, -0.35, 0.3), LEN.upper, LEN.fore);
+}
+model.updateMatrixWorld(true);
+
+// ---------- pillow ----------
+const headWorld = wp(B.Head);
+const headLocal = backrest.worldToLocal(headWorld.clone());
+// The back of the head sits ~9 cm behind the head bone (measured).
+const PT = Math.max(0.06, headLocal.y - 0.085);
+const pillow = rbox(0.56, PT, 0.2, 0.035, pillowMat);
+pillow.position.set(0, PT / 2, headLocal.z - 0.06);
+backrest.add(pillow);
+bed.updateMatrixWorld(true);
+const pillowTop = (x, z) => {
+  // World height of the pillow's top face under (x, z).
+  const p = backrest.worldToLocal(V(x, 0, z));
+  const l = V(p.x, PT, headLocal.z - 0.03 + (p.z - (headLocal.z - 0.03)));
+  // Walk along local z until the world z matches (tilted plane).
+  for (let k = 0; k < 6; k++) {
+    const w = backrest.localToWorld(l.clone());
+    l.z += (z - w.z) / Math.cos(BACK);
+  }
+  return backrest.localToWorld(l.clone()).y;
+};
+
+// ---------- the Opalina sensor: SFM flow meter on a compact housing ----------
+// Housing 60 x 15 x 10 mm (light, satin, 3D printed) with a two-line LCD on
+// its long face; the SFM (69.3 x 25.3 x 22 mm, smoky and translucent) sits on
+// top, its flow axis along the housing, electrical side hidden in the joint.
+const sensor = new THREE.Group();   // local X = flow axis, Y = up, Z = LCD face
+const housing = rbox(0.06, 0.01, 0.015, 0.0025, std(0xf5f5f7, 0.55));
+housing.position.y = 0.005;
+sensor.add(housing);
+const smoky = std(0x59625f, 0.12, { transparent: true, opacity: 0.5, depthWrite: false });
+const SFM_Y = 0.01 + 0.011;
+for (const sx of [1, -1]) {
+  const port = new THREE.Mesh(new THREE.CylinderGeometry(0.0112, 0.0112, 0.022, 28, 1, true), smoky);
+  port.rotation.z = Math.PI / 2;
+  port.position.set(sx * 0.0237, SFM_Y, 0);
+  sensor.add(port);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.0112, 0.0009, 8, 28), smoky);
+  rim.rotation.y = Math.PI / 2;
+  rim.position.set(sx * 0.0347, SFM_Y, 0);
+  sensor.add(rim);
+  const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.0118, 0.0118, 0.003, 28), smoky);
+  collar.rotation.z = Math.PI / 2;
+  collar.position.set(sx * 0.0128, SFM_Y, 0);
+  sensor.add(collar);
+}
+const core = new THREE.Mesh(new THREE.BoxGeometry(0.023, 0.022, 0.0215), smoky);
+core.position.set(0, SFM_Y, 0);
+sensor.add(core);
+const pcb = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.0012, 0.017), std(0x00594f, 0.5));
+pcb.position.set(0, SFM_Y + 0.006, 0);
+sensor.add(pcb);
+const chip = new THREE.Mesh(new THREE.BoxGeometry(0.005, 0.0015, 0.004), std(0x1a1f1e, 0.4));
+chip.position.set(0.003, SFM_Y + 0.0073, 0.002);
+sensor.add(chip);
+// The air in the meter: lit while the sensor reads an inspiration.
+const airMat = new THREE.MeshBasicMaterial({ color: 0xcedc00, transparent: true, opacity: 0, depthWrite: false });
+const air = new THREE.Mesh(new THREE.CylinderGeometry(0.0085, 0.0085, 0.066, 20), airMat);
+air.rotation.z = Math.PI / 2;
+air.position.y = SFM_Y;
+sensor.add(air);
+// LCD: exactly two lines, nothing else.
+const lcdTex = canvasTex(1024, 172, (g, w, h) => {
+  g.setTransform(2, 0, 0, 2, 0, 0);
+  const T = TEXT[lang].lcd;
+  g.fillStyle = '#121816'; g.fillRect(0, 0, w / 2, h / 2);
+  g.fillStyle = '#dfe6e2'; g.strokeStyle = '#dfe6e2';
+  g.textBaseline = 'middle';
+  g.font = '600 29px "IBM Plex Mono", ui-monospace, monospace';
+  g.fillText(T[0], 16, 25);
+  g.lineWidth = 2; g.strokeRect(186, 15, 206, 20); g.fillRect(190, 19, 198 * 0.8, 12);
+  g.fillText('80%', 404, 25);
+  g.strokeRect(16, 52, 38, 18); g.fillRect(54, 57, 4, 8); g.fillRect(20, 56, 30, 10);
+  g.font = '600 25px "IBM Plex Mono", ui-monospace, monospace';
+  g.fillText('100%', 68, 62);
+  g.fillText(T[1], 150, 62);
+});
+document.fonts?.load('600 29px "IBM Plex Mono"').then(() => lcdTex.redraw());
+const lcd = new THREE.Mesh(new THREE.PlaneGeometry(0.048, 0.0081), new THREE.MeshStandardMaterial({ map: lcdTex, roughness: 0.3, emissive: 0xffffff, emissiveMap: lcdTex, emissiveIntensity: 0.25 }));
+lcd.position.set(0, 0.005, 0.0076);
+sensor.add(lcd);
+scene.add(sensor);
+
+// Mouth, face direction and the airway: tube out of the mouth, a short
+// flexible mount down to the sensor lying on the pillow beside the head,
+// then the Y-piece where the two ventilator hoses meet.
+// The tube leaves the left corner of the mouth, rises clear of the lips,
+// turns toward the devices above the cheek, and the flexible mount comes down
+// outside the cheek and ear to the sensor.
+const vMouth = nearestVertex(V(0.016, 1.628, 0.095), (v) => v.x > 0.008 && v.z > 0.07);
+const vNape = nearestVertex(V(0, 1.64, -0.11));
+const mouth = skinPoint(vMouth, new THREE.Vector3());
+const faceFwd = mouth.clone().sub(skinPoint(vNape, new THREE.Vector3())).normalize();
+const S = V(0.2, 0, headWorld.z - 0.1);
+S.y = pillowTop(S.x, S.z) - 0.004;
+sensor.position.copy(S);
+sensor.rotation.y = -0.12;
+sensor.updateMatrixWorld(true);
+const portA = sensor.localToWorld(V(-0.0347, SFM_Y, 0));
+const portB = sensor.localToWorld(V(0.0347, SFM_Y, 0));
+const axis = portB.clone().sub(portA).normalize();
+const toLeft = V(1, 0, 0);
+const e1 = mouth.clone().addScaledVector(faceFwd, 0.05);
+const e2 = e1.clone().addScaledVector(faceFwd, 0.012).addScaledVector(toLeft, 0.03);
+scene.add(tube([mouth.clone().addScaledVector(faceFwd, -0.012), mouth.clone().addScaledVector(faceFwd, 0.025), e1, e2], 0.0055, clearMat, 24));
+const connector = mesh(new THREE.CylinderGeometry(0.0078, 0.0078, 0.022, 20), std(0xf0f2f2, 0.4));
+const e3 = e2.clone().addScaledVector(toLeft, 0.018);
+connector.position.copy(e2.clone().lerp(e3, 0.5));
+connector.quaternion.setFromUnitVectors(V(0, 1, 0), toLeft);
+scene.add(connector);
+scene.add(hose([e3, e3.clone().addScaledVector(toLeft, 0.035).addScaledVector(faceFwd, 0.02), V(0.115, (e3.y + portA.y) / 2 + 0.02, (e3.z + portA.z) / 2 - 0.02),
+  portA.clone().addScaledVector(axis, -0.045).add(V(0, 0.012, 0)), portA.clone().addScaledVector(axis, -0.012)], 0.0095));
+// Y-piece: a short stem out of the sensor, then two branches.
+const yStem = portB.clone().addScaledVector(axis, 0.03);
+scene.add(tube([portB.clone().addScaledVector(axis, -0.006), yStem], 0.0114, clearMat, 6));
+const side = new THREE.Vector3().crossVectors(axis, V(0, 1, 0)).normalize();
+const branch = [1, -1].map((k) => yStem.clone().addScaledVector(axis, 0.035).addScaledVector(side, k * 0.022));
+branch.forEach((b) => scene.add(tube([yStem, yStem.clone().addScaledVector(axis, 0.015), b], 0.011, clearMat, 10)));
+
+// ---------- ventilator (generic, no brand) ----------
+const vent = new THREE.Group();
+vent.position.set(0.3, 0, -1.3);
+vent.rotation.y = 0.35;
+scene.add(vent);
+casterBase(vent, 0.3);
+vent.add(tube([V(0, 0.06, 0), V(0, 0.78, 0)], 0.025, whiteMat, 4));
+const ventBody = rbox(0.36, 0.42, 0.28, 0.025, whiteMat);
+ventBody.position.set(0, 0.99, 0);
+vent.add(ventBody);
+const ventTex = canvasTex(320, 200, (g, w, h) => {
+  g.fillStyle = '#0e1412'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#1b2422'; g.fillRect(0, 0, w, 18);
+  g.strokeStyle = '#9aa5a1'; g.lineWidth = 2;
+  for (const [y0, amp, shape] of [[60, 26, 0], [120, 22, 1], [178, 18, 2]]) {
+    g.beginPath();
+    for (let x = 10; x < 250; x++) {
+      const u = ((x - 10) % 80) / 80;
+      let v = 0;
+      if (shape === 0) v = u < 0.33 ? Math.min(1, u * 12) : Math.max(0, 1 - (u - 0.33) * 12);
+      if (shape === 1) v = u < 0.33 ? Math.sin((u / 0.33) * Math.PI) : -0.8 * Math.exp(-(u - 0.33) * 9);
+      if (shape === 2) v = u < 0.33 ? u / 0.33 : Math.exp(-(u - 0.33) * 7);
+      g.lineTo(x, y0 - v * amp);
+    }
+    g.stroke();
+  }
+  g.fillStyle = '#26302d';
+  for (let i = 0; i < 4; i++) g.fillRect(262, 28 + i * 42, 48, 34);
+});
+const ventScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.19), new THREE.MeshStandardMaterial({ map: ventTex, emissive: 0xffffff, emissiveMap: ventTex, emissiveIntensity: 0.35, roughness: 0.3 }));
+ventScreen.position.set(0, 1.07, 0.141);
+vent.add(ventScreen);
+const ventPorts = [-0.12, -0.05].map((x) => {
+  const p = mesh(new THREE.CylinderGeometry(0.013, 0.013, 0.03, 20), std(0xbfc6c4, 0.4));
+  p.rotation.x = Math.PI / 2;
+  p.position.set(x, 0.83, 0.15);
+  vent.add(p);
+  return p;
+});
+vent.updateMatrixWorld(true);
+// Inspiratory and expiratory limbs: out of the ports, a loose sag, over the
+// mattress edge and up the pillow to the Y-piece.
+ventPorts.forEach((p, k) => {
+  const out = p.localToWorld(V(0, -0.015, 0));
+  const out2 = vent.localToWorld(V(p.position.x, 0.83, 0.2));
+  const b = branch[k];
+  const pts = [out, out2, V(0.4 + k * 0.035, 1.06, -1.08), V(0.4 + k * 0.035, 1.15, -0.9), V(0.36 + k * 0.035, 1.1, -0.72),
+    b.clone().addScaledVector(axis, 0.05).add(V(0, 0.01, -0.02 - k * 0.02)), b];
+  scene.add(hose(pts, 0.011));
+});
+
+// ---------- ReCARE (after the reference photos; one unit, on its cart) ----------
+const recare = new THREE.Group();
+recare.position.set(0.82, 0, -0.68);
+recare.rotation.y = 0.75;
+scene.add(recare);
+casterBase(recare, 0.26);
+recare.add(tube([V(0, 0.06, 0), V(0, 0.86, 0)], 0.022, whiteMat, 4));
+const basket = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(0.2, 0.1, 0.15)), new THREE.LineBasicMaterial({ color: 0x1c2321 }));
+basket.position.set(0, 0.62, 0.03);
+recare.add(basket);
+const tray = rbox(0.36, 0.02, 0.3, 0.008, whiteMat);
+tray.position.set(0, 0.87, 0.02);
+recare.add(tray);
+const rcBody = rbox(0.27, 0.075, 0.22, 0.02, whiteMat);
+rcBody.position.set(0, 0.92, 0.03);
+recare.add(rcBody);
+const rcTop = rbox(0.262, 0.014, 0.21, 0.006, panelMat);
+rcTop.position.set(0, 0.962, 0.03);
+rcTop.rotation.x = 0.1;
+recare.add(rcTop);
+const rcTex = canvasTex(200, 130, (g, w, h) => {
+  g.fillStyle = '#0f1513'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#1d2624'; g.fillRect(0, 0, w, 16);
+  g.strokeStyle = '#8f9a96'; g.lineWidth = 2;
+  g.beginPath();
+  for (let x = 12; x < 188; x++) g.lineTo(x, 80 - 26 * Math.max(0, Math.sin(((x - 12) / 60) * Math.PI * 2)));
+  g.stroke();
+});
+const rcScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.1), new THREE.MeshStandardMaterial({ map: rcTex, emissive: 0xffffff, emissiveMap: rcTex, emissiveIntensity: 0.3, roughness: 0.3 }));
+rcScreen.rotation.x = -Math.PI / 2 + 0.1;
+rcScreen.position.set(-0.03, 0.9705, 0.035);
+recare.add(rcScreen);
+const knob = mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.008, 28), std(0xcfd5d3, 0.3));
+knob.position.set(0.09, 0.972, 0.07);
+recare.add(knob);
+const rcLed = new THREE.Mesh(new THREE.CircleGeometry(0.005, 16), new THREE.MeshBasicMaterial({ color: 0x3a4541 }));
+rcLed.rotation.x = -Math.PI / 2 + 0.1;
+rcLed.position.set(0.09, 0.9705, 0.0);
+recare.add(rcLed);
+recare.updateMatrixWorld(true);
+// Articulated arm up from the pole, carrying the connector block over the
+// bed's edge, near the patient's shoulder.
+const armBase = recare.localToWorld(V(0, 0.9, -0.12));
+const block = new THREE.Group();
+block.position.set(0.52, 1.18, -0.62);
+scene.add(block);
+const blockBox = rbox(0.12, 0.08, 0.045, 0.006, darkMat);
+block.add(blockBox);
+const SOCKETS = [0x8c9491, 0x111615, 0x1f8a8a, 0x2c5da8, 0x3f9a4a, 0xd6b52a, 0xb8403a, 0xe9ecee];
+const socketPos = SOCKETS.map((c, i) => {
+  const s = new THREE.Mesh(new THREE.CylinderGeometry(0.0065, 0.0065, 0.006, 16), std(c, 0.4));
+  s.rotation.x = Math.PI / 2;
+  s.position.set(-0.042 + (i % 4) * 0.028, i < 4 ? 0.017 : -0.017, 0.024);
+  block.add(s);
+  return s.position.clone();
+});
+block.lookAt(V(0.1, 1.35, 0.4));
+block.updateMatrixWorld(true);
+const blockBack = block.localToWorld(V(0.03, 0, -0.03));
+const armPts = [armBase, armBase.clone().add(V(0, 0.2, 0)), armBase.clone().add(V(-0.03, 0.3, -0.01)), blockBack.clone().add(V(0.07, 0.03, -0.01)), blockBack];
+scene.add(tube(armPts, 0.014, whiteMat, 60));
+for (const j of [1, 2]) { const k = mesh(new THREE.SphereGeometry(0.02, 16, 12), whiteMat); k.position.copy(armPts[j]); scene.add(k); }
+const armCable = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(armPts.map((p) => p.clone().add(V(0.012, -0.012, 0.012)))), 60, 0.004, 6), darkMat);
+scene.add(armCable);
+
+// ---------- neck electrodes (painted) and their cables ----------
+// Two small round pads on the left side of the neck, one above the other, over
+// the path of the phrenic nerve. Positions measured on this body: the neck's
+// side is ~6 cm from the midline between 1.53 and 1.58 m (rest space).
+const neckAxisAt = (y) => V(0, y, -0.02);
+const neck = [1.573, 1.547].map((y) => {
+  const vtx = nearestVertex(V(0.07, y, 0.0), (v) => v.x > 0.03 && Math.abs(v.z) < 0.03 && Math.abs(v.y - y) < 0.006);
+  const c = new THREE.Vector3().fromBufferAttribute(bodyPos, vtx);
+  const n = c.clone().sub(neckAxisAt(c.y)); n.y = 0; n.normalize();
+  return { vtx, c, n };
+});
+neck.forEach((p, i) => { skin.uNeckC.value[i].copy(p.c); skin.uNeckN.value[i].copy(p.n); });
+const CABLE_SAMPLES = 120;
+function cableLine(points) {
+  const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
+  const g = new THREE.BufferGeometry().setFromPoints(curve.getPoints(CABLE_SAMPLES - 1));
+  const l = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x7d8986 }));
+  scene.add(l);
+  return l;
+}
+const neckWorld = neck.map((p) => {
+  const s = skinPoint(p.vtx, new THREE.Vector3());
+  // Outward normal in the posed neck: away from the line between neck and head bones.
+  const A = wp(B.Neck), H = wp(B.Head), ax2 = H.clone().sub(A).normalize();
+  const n = s.clone().sub(A); n.addScaledVector(ax2, -n.dot(ax2)).normalize();
+  return { s: s.addScaledVector(n, 0.003), n };
+});
+const cables = neckWorld.map(({ s, n }, i) => {
+  const sock = block.localToWorld(socketPos[5 + i - 1].clone().add(V(0, 0, 0.004)));
+  const out = s.clone().addScaledVector(n, 0.1).add(V(0, 0.03, -0.02 - i * 0.012));
+  return cableLine([s, s.clone().addScaledVector(n, 0.03), out, out.clone().lerp(sock, 0.5).add(V(0, -0.02, 0)), sock.clone().add(V(-0.02, -0.02, 0.03)), sock]);
+});
+
+// ---------- anchors for the labels ----------
+const vDia = nearestVertex(V(0.06, 1.26, 0.12), (v) => v.z > 0.05);
+const anchors = {
+  sensor: sensor.localToWorld(V(0, SFM_Y + 0.012, 0)),
+  recare: rcBody.getWorldPosition(new THREE.Vector3()).add(V(0, 0.06, 0)),
+  pad: neckWorld[0].s.clone(),
+  dia: skinPoint(vDia, new THREE.Vector3()),
+};
+
+const grey = new THREE.Color(0x7d8986), lime = new THREE.Color(0xcedc00), ledOff = new THREE.Color(0x3a4541);
+function update(time) {
+  const b = breath(time);
+  skin.uBreath.value = b.vol;
+  skin.uDia.value = params.has('all') ? 1 : b.stim;
+  airMat.opacity = b.insp * 0.55;
+  for (const c of cables) c.material.color.copy(grey).lerp(lime, b.stim * 0.85);
+  rcLed.material.color.copy(ledOff).lerp(lime, b.stim);
+}
+
+// ---------- camera: nearly still, a slow breath in and out ----------
+function placeCamera(time) {
+  const aspect = stage.clientWidth / stage.clientHeight;
+  const narrow = aspect < 1;
+  const phi = THREE.MathUtils.degToRad(params.has('phi') ? +params.get('phi') : (narrow ? 66 : 60) + 3 * Math.sin((time / 40) * Math.PI * 2));
+  const el = THREE.MathUtils.degToRad(params.has('el') ? +params.get('el') : 30);
+  const dist = params.has('d') ? +params.get('d') : (narrow ? 4.3 : 3.2) + 0.12 * Math.sin((time / 30) * Math.PI * 2);
+  const aim = params.has('look') ? V(...params.get('look').split(',').map(Number)) : target;
+  camera.position.set(
+    aim.x + dist * Math.sin(phi) * Math.cos(el),
+    aim.y + dist * Math.sin(el),
+    aim.z + dist * Math.cos(phi) * Math.cos(el),
+  );
+  camera.lookAt(aim);
+}
+
+// The renderer's own antialias only applies when drawing straight to the
+// canvas; the bloom composer draws into its own targets, so they need MSAA.
+const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }));
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), 0.35, 0.4, 1.0));
+composer.addPass(new OutputPass());
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  composer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+
+// ---------- labels: written once, then still ----------
+// Order matches TEXT.tags: sensor, ReCARE, neck electrodes, diaphragm.
+const TAGS = [
+  { key: 'sensor', wide: [0.04, 0.05, 'left'], narrow: [0.05, 0.03, 'left'] },
+  { key: 'recare', wide: [0.96, 0.05, 'right'], narrow: [0.95, 0.1, 'right'] },
+  { key: 'pad', wide: [0.37, 0.05, 'left'], narrow: [0.05, 0.9, 'left'] },
+  { key: 'dia', wide: [0.04, 0.76, 'left'], narrow: [0.95, 0.96, 'right'] },
+];
+if (params.has('log')) {
+  const f = (v) => v.toArray().map((x) => +x.toFixed(3)).join(',');
+  console.log('LOG head', f(headWorld), 'neck', f(wp(B.Neck)), 'mouth', f(mouth), 'fwd', f(faceFwd), 'shoulderL', f(wp(B.LeftArm)), 'S', f(S), 'pad0', f(neckWorld[0].s), 'dia', f(anchors.dia), 'PT', PT.toFixed(3), 'headLocal', f(headLocal));
+}
+// ---------- ?check=1: thin parts (tubes, hoses, cables) passing through solid boxes ----------
+if (params.has('check')) {
+  scene.updateMatrixWorld(true);
+  const solids = [], thins = [];
+  scene.traverse((o) => {
+    const t = o.geometry?.type;
+    if (o.isMesh && /Box/.test(t || '')) { o.geometry.computeBoundingBox(); solids.push(o); }
+    if ((o.isMesh && t === 'TubeGeometry') || o.isLine) thins.push(o);
+  });
+  const name = (o) => { const p = o.geometry.parameters || {}; const w = new THREE.Vector3(); o.getWorldPosition(w); return `${o.geometry.type}[${[p.width, p.height, p.depth].map((v) => v && +v.toFixed(3)).join('x')}]@${w.toArray().map((v) => v.toFixed(2)).join(',')}`; };
+  const v = new THREE.Vector3(), inv = new THREE.Matrix4();
+  thins.forEach((t, ti) => {
+    const pos = t.geometry.attributes.position; const hits = {};
+    const step = Math.max(1, Math.floor(pos.count / 400));
+    for (let i = 0; i < pos.count; i += step) {
+      v.fromBufferAttribute(pos, i).applyMatrix4(t.matrixWorld);
+      for (const s of solids) {
+        if (s === t) continue;
+        const l = v.clone().applyMatrix4(inv.copy(s.matrixWorld).invert());
+        const b = s.geometry.boundingBox.clone().expandByScalar(-0.003);
+        if (b.containsPoint(l)) { const k = name(s); hits[k] = hits[k] || v.toArray().map((x) => +x.toFixed(3)); }
+      }
+    }
+    const w = new THREE.Vector3(); const p0 = new THREE.Vector3().fromBufferAttribute(pos, 0).applyMatrix4(t.matrixWorld);
+    for (const [k, at] of Object.entries(hits)) console.log('HIT', ti, t.isLine ? 'line' : 'tube', 'start', p0.toArray().map((x) => x.toFixed(2)).join(','), '->', k, 'at', at.join(','));
+  });
+  // Solids overlapping solids (carts vs bed).
+  const bw = (o) => new THREE.Box3().setFromObject(o).expandByScalar(-0.004);
+  const big = solids.filter((s) => { const sz = new THREE.Vector3(); bw(s).getSize(sz); return sz.x > 0.05 && sz.y > 0.02 && sz.z > 0.05; });
+  for (let a = 0; a < big.length; a++) for (let b = a + 1; b < big.length; b++) {
+    const pa = big[a].parent, pb = big[b].parent;
+    if (pa === pb) continue;
+    if (bw(big[a]).intersectsBox(bw(big[b]))) console.log('OVERLAP', name(big[a]), '<->', name(big[b]));
+  }
+  console.log('CHECK DONE', thins.length, 'thin', solids.length, 'solid');
+}
+if (params.has('check')) {
+  // Posed body as a plain mesh, for inside/outside tests.
+  const P = new Float32Array(bodyPos.count * 3), q = new THREE.Vector3();
+  for (let i = 0; i < bodyPos.count; i++) { skinPoint(i, q); P.set([q.x, q.y, q.z], i * 3); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(P, 3)); g.setIndex(bodyMesh.geometry.index); g.computeVertexNormals();
+  const N = g.attributes.normal;
+  const nearest = (p) => { let b = -1, bd = 1e9; for (let i = 0; i < bodyPos.count; i++) { const d = (P[i*3]-p.x)**2 + (P[i*3+1]-p.y)**2 + (P[i*3+2]-p.z)**2; if (d < bd) { bd = d; b = i; } } return [b, Math.sqrt(bd)]; };
+  const depth = (p) => { const [i, d] = nearest(p); if (d > 0.04) return 0; const n = new THREE.Vector3().fromBufferAttribute(N, i); const v = new THREE.Vector3(P[i*3], P[i*3+1], P[i*3+2]); return -p.clone().sub(v).dot(n); };
+  // 1) thin things inside the body (skip the ends that are meant to touch skin).
+  const thinsB = []; scene.traverse((o) => { if ((o.isMesh && o.geometry.type === 'TubeGeometry') || o.isLine) thinsB.push(o); });
+  thinsB.forEach((t, ti) => {
+    const pos = t.geometry.attributes.position, n = pos.count, step = Math.max(1, Math.floor(n / 150)); let worst = 0, at = null;
+    for (let i = Math.floor(n * 0.06); i < n * 0.94; i += step) { const p = new THREE.Vector3().fromBufferAttribute(pos, i).applyMatrix4(t.matrixWorld); const dd = depth(p); if (dd > worst) { worst = dd; at = p; } }
+    if (worst > 0.004) console.log('BODY', ti, t.isLine ? 'line' : 'tube', 'depth', worst.toFixed(3), 'at', at.toArray().map((x) => x.toFixed(3)).join(','));
+  });
+  // 2) body vertices inside bed parts, and gap between back and backrest.
+  for (const s of [flat, upper, pillow]) {
+    s.geometry.computeBoundingBox(); const inv = s.matrixWorld.clone().invert(); const bb = s.geometry.boundingBox; let worst = 0, c = 0, at = null;
+    for (let i = 0; i < bodyPos.count; i++) { const l = new THREE.Vector3(P[i*3], P[i*3+1], P[i*3+2]).applyMatrix4(inv); if (bb.containsPoint(l)) { c++; const d = bb.max.y - l.y; if (d > worst) { worst = d; at = [P[i*3], P[i*3+1], P[i*3+2]]; } } }
+    console.log('SINK', s === flat ? 'flat' : s === upper ? 'backrest' : 'pillow', 'verts', c, 'deepest', worst.toFixed(3), at && at.map((x) => x.toFixed(2)).join(','));
+  }
+  // Back gap: for points along the spine, distance from the lowest skin to the backrest top.
+  const invU = upper.matrixWorld.clone().invert();
+  let minGap = 9;
+  for (let i = 0; i < bodyPos.count; i++) { const by = bodyPos.getY(i); if (by < 1.1 || by > 1.5 || Math.abs(bodyPos.getX(i)) > 0.12) continue; const l = new THREE.Vector3(P[i*3], P[i*3+1], P[i*3+2]).applyMatrix4(invU); if (Math.abs(l.x) < 0.4 && l.z > -0.86 && l.z < 0) minGap = Math.min(minGap, l.y - MT / 2); }
+  console.log('BACK GAP to backrest top (m):', minGap.toFixed(3));
+  // 3) hands vs blanket.
+  for (const s of ['Left', 'Right']) { const h = wp(B[s + 'Hand']); console.log('HAND', s, 'y', h.y.toFixed(3), 'blanket', blanket.heightAt(h.x, h.z).toFixed(3)); }
+  // Lowest hand skin vs blanket.
+  let worstHand = 9; for (let i = 0; i < bodyPos.count; i++) { if (Math.abs(bodyPos.getX(i)) < 0.6 || bodyPos.getY(i) < 1.3) continue; const x = P[i*3], y = P[i*3+1], z = P[i*3+2]; if (z < BLANKET_Z) continue; worstHand = Math.min(worstHand, y - blanket.heightAt(x, z)); }
+  console.log('HAND skin min height over blanket (neg = inside):', worstHand.toFixed(3));
+}
+if (params.has('check')) {
+  const l = pillow.worldToLocal(sensor.localToWorld(V(0, 0, 0)));
+  const hb = pillow.geometry.parameters;
+  console.log('SENSOR in pillow local', l.toArray().map((x) => x.toFixed(3)).join(','), 'pillow half', (hb.width / 2).toFixed(3), (hb.height / 2).toFixed(3), (hb.depth / 2).toFixed(3));
+}
+const svg = $('leaders');
+const NS = 'http://www.w3.org/2000/svg';
+for (const tg of TAGS) {
+  tg.el = document.createElement('div');
+  tg.el.className = 'tag';
+  tg.el.innerHTML = '<b></b><span></span>';
+  tg.num = String(TAGS.indexOf(tg) + 1).padStart(2, '0');
+  $('tags').appendChild(tg.el);
+  tg.line = document.createElementNS(NS, 'polyline');
+  tg.line.setAttribute('class', 'leader');
+  svg.appendChild(tg.line);
+  tg.dot = document.createElementNS(NS, 'circle');
+  tg.dot.setAttribute('r', 2.5);
+  tg.dot.setAttribute('class', 'anchor');
+  svg.appendChild(tg.dot);
+  tg.shown = -1;
+}
+// The sensor is a few centimetres long: in the wide shot it is a speck, so its
+// label carries a close-up box, tied to it by a ring and two lines.
+const zoomTag = TAGS[0];
+zoomTag.zoom = document.createElement('div');
+zoomTag.zoom.className = 'tag__zoom';
+zoomTag.el.classList.add('tag--zoom');
+zoomTag.zoom.innerHTML = '<em></em>';
+zoomTag.el.appendChild(zoomTag.zoom);
+zoomTag.ring = document.createElementNS(NS, 'circle');
+zoomTag.ring.setAttribute('class', 'zoom-ring');
+zoomTag.ring.setAttribute('r', 24);
+zoomTag.lines = document.createElementNS(NS, 'path');
+zoomTag.lines.setAttribute('class', 'zoom-lines');
+svg.append(zoomTag.ring, zoomTag.lines);
+let zoomRect = null;
+let revealStart = null;
+const CHARS_PER_SEC = 34, GAP = 0.9;
+
+function drawTags() {
+  const T = TEXT[lang];
+  const w = stage.clientWidth, h = stage.clientHeight;
+  const narrow = w < 760;
+  const since = revealStart === null ? -1 : (performance.now() - revealStart) / 1000;
+  let offset = 0;
+  TAGS.forEach((tg, i) => {
+    const [title, sub] = T.tags[i];
+    const n = reduced ? title.length : Math.max(0, Math.min(title.length, Math.floor((since - offset) * CHARS_PER_SEC)));
+    offset += title.length / CHARS_PER_SEC + GAP;
+    if (n !== tg.shown || tg.lang !== lang) {
+      tg.el.firstChild.innerHTML = n > 0 ? `<i>${tg.num}</i>` : '';
+      tg.el.firstChild.append(title.slice(0, n));
+      tg.el.querySelector('span').textContent = sub;
+      if (tg.zoom) tg.zoom.firstChild.textContent = T.detail;
+      tg.el.classList.toggle('is-done', n === title.length);
+      tg.shown = n;
+      tg.lang = lang;
+    }
+    const on = n > 0 ? 1 : 0;
+    tg.line.style.opacity = on;
+    tg.dot.style.opacity = on;
+
+    const p = anchors[tg.key].clone().project(camera);
+    const x = (p.x * 0.5 + 0.5) * w, y = (-p.y * 0.5 + 0.5) * h;
+    const [fx, fy, edge] = narrow ? tg.narrow : tg.wide;
+    const tw = Math.max(tg.el.offsetWidth, 1), th = tg.el.offsetHeight;
+    const left = edge === 'left' ? fx * w : fx * w - tw;
+    const top = fy * h;
+    tg.el.style.transform = `translate(${left}px, ${top}px)`;
+    const above = y < top;
+    const baseY = above ? top - 6 : top + th + 6;
+    const nearX = Math.abs(x - left) < Math.abs(x - (left + tw)) ? left : left + tw;
+    const farX = nearX === left ? left + tw : left;
+    tg.line.setAttribute('points', `${x},${y} ${nearX},${baseY} ${farX},${baseY}`);
+    tg.dot.setAttribute('cx', x);
+    tg.dot.setAttribute('cy', y);
+
+    if (tg.zoom) {
+      const zoomOn = !narrow && tg.el.classList.contains('is-done');
+      tg.line.style.opacity = narrow ? on : 0;
+      tg.dot.style.opacity = narrow ? on : 0;
+      tg.ring.style.opacity = tg.lines.style.opacity = zoomOn ? 1 : 0;
+      zoomRect = null;
+      if (zoomOn) {
+        const zx = left + tg.zoom.offsetLeft, zy = top + tg.zoom.offsetTop;
+        const zw = tg.zoom.offsetWidth, zh = tg.zoom.offsetHeight;
+        zoomRect = { x: zx, y: zy, w: zw, h: zh };
+        const R = 24, cx = zx < x ? zx + zw : zx;
+        const edgePt = (tx, ty) => {
+          const d = Math.hypot(tx - x, ty - y) || 1;
+          return `${x + ((tx - x) / d) * R},${y + ((ty - y) / d) * R}`;
+        };
+        tg.ring.setAttribute('cx', x);
+        tg.ring.setAttribute('cy', y);
+        tg.lines.setAttribute('d', `M${edgePt(cx, zy)} L${cx},${zy} M${edgePt(cx, zy + zh)} L${cx},${zy + zh}`);
+      }
+    }
+  });
+}
+
+// Second camera for the close-up: from the main camera's side, close to the
+// sensor, so the LCD reads and the neck pads sit at the edge of the frame.
+const zoomCam = new THREE.PerspectiveCamera(30, 1, 0.01, 10);
+// Looks at the LCD face, from the feet side and a little above.
+// Framed on the LCD, almost head-on, with the meter just above it.
+const ZOOM_AT = sensor.localToWorld(V(0, 0.011, 0.0076));
+const ZOOM_DIR = sensor.localToWorld(V(0.12, 0.4, 1)).sub(sensor.localToWorld(V(0, 0, 0))).normalize();
+function renderZoom() {
+  if (!zoomRect) return;
+  zoomCam.position.copy(ZOOM_AT).addScaledVector(ZOOM_DIR, params.has('zd') ? +params.get('zd') : 0.085);
+  zoomCam.up.set(0, 1, 0);
+  zoomCam.lookAt(ZOOM_AT);
+  zoomCam.aspect = zoomRect.w / zoomRect.h;
+  zoomCam.updateProjectionMatrix();
+  const H = stage.clientHeight;
+  const vy = H - zoomRect.y - zoomRect.h;
+  renderer.shadowMap.autoUpdate = false;
+  renderer.setScissorTest(true);
+  renderer.setScissor(zoomRect.x, vy, zoomRect.w, zoomRect.h);
+  renderer.setViewport(zoomRect.x, vy, zoomRect.w, zoomRect.h);
+  renderer.render(scene, zoomCam);
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, stage.clientWidth, H);
+  renderer.shadowMap.autoUpdate = true;
+}
+
+// ---------- loop ----------
+function applyLanguage() {
+  const T = TEXT[lang];
+  document.documentElement.lang = NDAnim.rot.html;
+  document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = T[el.dataset.t]; });
+  NDAnim.botao($('toggle'), playing, T);
+  $('legend').innerHTML = T.tags.map(([title, body], i) =>
+    `<li><b><i>${String(i + 1).padStart(2, '0')}</i>${title}</b><p>${body}</p></li>`).join('');
+  lcdTex.redraw();
+}
+applyLanguage();
+
+// ?t=<sec> freezes; t=i is mid-stimulus (inspiration), t=e mid-expiration.
+const PEAK = 1.0;
+let clock = 0, last = null, raf = 0, visible = true, frozen = false;
+if (params.has('t')) {
+  frozen = true;
+  const t = params.get('t');
+  clock = t === 'i' ? PEAK : t === 'e' ? 3.0 : +t;
+}
+if (reduced) clock = PEAK;
+function frame(now) {
+  if (last !== null && playing && !frozen) clock += Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(clock);
+  placeCamera(reduced ? 0 : clock);
+  composer.render();
+  drawTags();
+  renderZoom();
+  raf = visible ? requestAnimationFrame(frame) : 0;
+}
+function start() { if (!raf) { last = null; raf = requestAnimationFrame(frame); } }
+
+$('status').remove();
+resize();
+start();
+new IntersectionObserver(([entry]) => {
+  visible = entry.isIntersecting;
+  if (visible && revealStart === null) revealStart = performance.now() + 500;
+  if (visible) start();
+}, { threshold: 0.3 }).observe(stage);
+$('toggle').addEventListener('click', () => { playing = !playing; applyLanguage(); });
+</script>
+</body>
+</html>

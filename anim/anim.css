@@ -1,0 +1,66 @@
+/* ============================================================
+   As animações dos projetos (anim/<nome>.html), embutidas na
+   página de cada projeto. Só o palco: o título e o texto ficam na
+   página. Cores, tipo e forma vêm de ../ds/tokens.css.
+   ============================================================ */
+*{box-sizing:border-box}
+.anim{position:relative}
+html,body{margin:0;background:var(--void);color:var(--ink);font-family:var(--f);-webkit-font-smoothing:antialiased}
+body{overflow:hidden}
+
+.stage{position:relative;aspect-ratio:16/9;overflow:hidden;background:var(--void)}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage__status{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--fd);font-weight:600;
+  font-size:11px;letter-spacing:var(--tr-label);text-transform:uppercase;color:var(--muted)}
+.overlay{position:absolute;inset:0;pointer-events:none}
+.overlay svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.leader{fill:none;stroke:rgba(var(--ink-rgb),.7);stroke-width:1}
+.anchor{fill:var(--ink)}
+
+/* os rótulos: o título se escreve sozinho, depois o texto aparece */
+.tag{position:absolute;left:0;top:0;width:300px;text-shadow:0 1px 12px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.9)}
+.tag b{display:block;font-family:var(--fd);font-weight:600;font-size:12px;line-height:1.3;letter-spacing:var(--tr-label);
+  text-transform:uppercase;min-height:1.3em}
+.tag b i,.legend b i{font-family:var(--fm);font-weight:500;font-style:normal;color:var(--syn);margin-right:8px;letter-spacing:.06em}
+.tag span{display:block;font-size:14px;line-height:1.45;color:var(--pia-medium);margin-top:6px;opacity:0;transition:opacity .7s ease}
+.tag.is-done span{opacity:1}
+/* o detalhe: uma segunda câmera desenha o close dentro desta caixa */
+.tag--zoom{width:380px}
+.tag__zoom{position:relative;height:215px;margin-top:12px;border:1px solid rgba(var(--ink-rgb),.28);opacity:0;transition:opacity .7s ease}
+.tag__zoom em{position:absolute;left:8px;top:6px;font-family:var(--fd);font-weight:600;font-size:10px;font-style:normal;
+  letter-spacing:var(--tr-label);text-transform:uppercase;color:var(--muted)}
+.tag.is-done .tag__zoom{opacity:1}
+.zoom-ring,.zoom-lines{fill:none;stroke:rgba(var(--ink-rgb),.7);stroke-width:1}
+
+/* o painel de sinal da Nebula: vidro sobre a cena */
+.hud{position:absolute;border:1px solid rgba(var(--ink-rgb),.14);border-radius:var(--r-md);
+  background:rgba(var(--fundo-rgb),.55);-webkit-backdrop-filter:var(--blur-glass);backdrop-filter:var(--blur-glass)}
+.note{position:absolute;left:18px;bottom:16px;margin:0;font-family:var(--fd);font-weight:600;font-size:10px;
+  letter-spacing:var(--tr-label);text-transform:uppercase;color:var(--grafite)}
+/* pausar: ação utilitária, ícone sobre véu discreto */
+.toggle{position:absolute;right:14px;bottom:12px;width:36px;height:36px;border-radius:var(--r-sm);
+  border:1px solid var(--line2);background:var(--glass);-webkit-backdrop-filter:var(--blur-glass);backdrop-filter:var(--blur-glass);
+  color:var(--muted);display:grid;place-items:center;cursor:pointer;padding:0;transition:color var(--t-fast),border-color var(--t-fast)}
+.toggle:hover{color:var(--ink);border-color:var(--dim)}
+.toggle:focus-visible{outline:2px solid var(--foco);outline-offset:2px}
+.toggle svg{width:15px;height:15px}
+
+.poster .overlay,.poster .note,.poster .toggle,.poster .legend{display:none!important}
+
+/* só no celular, onde o texto inteiro não cabe sobre a cena */
+.legend{display:none;list-style:none;margin:0;padding:18px 16px 4px;gap:16px}
+.legend li{border-top:1px solid var(--line2);padding-top:12px}
+.legend b{display:block;font-family:var(--fd);font-weight:600;font-size:11.5px;line-height:1.3;letter-spacing:var(--tr-label);text-transform:uppercase}
+.legend p{margin:6px 0 0;color:var(--muted);font-size:14px;line-height:1.5}
+
+@media (max-width:760px){
+  .legend{display:grid}
+  .stage{aspect-ratio:4/5}
+  .tag{width:auto;white-space:nowrap}
+  .tag b{font-size:10.5px}
+  .tag span,.tag__zoom{display:none}
+  .note{display:none}
+  /* no celular os rótulos ocupam os cantos: o botão desce para logo abaixo do palco */
+  .toggle{width:44px;height:44px;top:calc(125vw + 10px);bottom:auto;right:16px}
+  .legend{padding-top:66px}
+}
