@@ -126,9 +126,9 @@ try{
     await p.waitForFunction(() => document.querySelector('.pj-hero h1')?.textContent === 'Novo');
     confere('projeto sem animação conhecida: placeholder, sem iframe', await p.locator('.pj-palco iframe').count() === 0 && await p.locator('.pj-palco .ph').count() === 1);
     await p.evaluate(() => { location.hash = '#/'; });
-    await p.waitForSelector('.pcard');
-    confere('o início mostra os dois do banco, com o link de cada página', await p.locator('.pcard').count() === 2
-      && await p.locator('.pcard').nth(1).getAttribute('href') === '#/projects/novo-db');
+    await p.waitForSelector('.tr-card[data-slug]');
+    confere('o início mostra os dois do banco no trilho, com o link de cada página', await p.locator('.tr-card[data-slug]').count() === 2
+      && await p.locator('.tr-card[data-slug]').nth(1).getAttribute('href') === '#/projects/novo-db');
     await fechar(t);
   }
 
